@@ -125,6 +125,7 @@ static struct lightningd *new_lightningd(const tal_t *ctx)
 	ld->dev_subdaemon_fail = false;
 	ld->dev_allow_localhost = false;
 	ld->dev_fast_gossip = false;
+	ld->blake2b_strict_peers = false;
 	ld->dev_fast_gossip_prune = false;
 	ld->dev_throttle_gossip = false;
 	ld->dev_suppress_gossip = false;

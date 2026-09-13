@@ -111,9 +111,9 @@ static struct io_plan *peer_init_received(struct io_conn *conn,
 	    && (!feature_offered(features, OPT_BLAKE2B)
 		|| !tlvs->networks || !contains_common_chain(tlvs->networks))) {
 		status_peer_debug(&peer->id, "Blake2b strict peer policy rejected init");
-		msg = towire_warningfmt(NULL, NULL,
+		msg = towire_warningfmt(peer, NULL,
 				       "Blake2b strict peer policy requires option_blake2b and matching networks");
-		msg = cryptomsg_encrypt_msg(NULL, &peer->cs, take(msg));
+		msg = cryptomsg_encrypt_msg(peer, &peer->cs, take(msg));
 		return io_write(conn, msg, tal_count(msg), io_close_cb, NULL);
 	}
 

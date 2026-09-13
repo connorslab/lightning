@@ -484,6 +484,8 @@ struct command_result *json_offer(struct command *cmd,
 	bool *proportional, *optional_recurrence;
 
 	offinfo->offer = offer = tlv_offer_new(offinfo);
+	offer->offer_features = tal_dup_talarr(offer, u8,
+		plugin_feature_set(cmd->plugin)->bits[BOLT12_OFFER_FEATURE]);
 
 	if (!param_check(cmd, buffer, params,
 			 p_req("amount", param_amount, offer),
@@ -812,6 +814,8 @@ struct command_result *json_invoicerequest(struct command *cmd,
 	 * - if it supports bolt12 invoice request features:
 	 *   - MUST set `invreq_features`.`features` to the bitmap of features.
 	 */
+	invreq->invreq_features = tal_dup_talarr(invreq, u8,
+		plugin_feature_set(cmd->plugin)->bits[BOLT12_INVREQ_FEATURE]);
 
 	if (we_want_blinded_path(cmd->plugin, od->fronting_nodes, false)) {
 		struct invrequest_data *idata = tal(cmd, struct invrequest_data);

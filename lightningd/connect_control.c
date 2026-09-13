@@ -716,7 +716,6 @@ int connectd_init(struct lightningd *ld)
 				   ld->always_use_proxy || ld->pure_tor_setup,
 				   ld->dev_allow_localhost,
 				   ld->config.use_dns,
-				   ld->blake2b_strict_peers,
 				   ld->tor_service_password ? ld->tor_service_password : "",
 				   ld->config.connection_timeout_secs,
 				   websocket_helper_path,

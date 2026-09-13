@@ -518,11 +518,6 @@ struct command_result *json_offer(struct command *cmd,
 		return command_param_failed();
 
 
-	/* Usage discovery runs before plugin initialization: access features only
-	 * after param_check has admitted a real command. */
-	offer->offer_features = tal_dup_talarr(offer, u8,
-		plugin_feature_set(cmd->plugin)->bits[BOLT12_OFFER_FEATURE]);
-
 	/* If they don't specify explicitly, use config (if any) */
 	if (!offinfo->fronting_nodes)
 		offinfo->fronting_nodes = od->fronting_nodes;
@@ -817,8 +812,6 @@ struct command_result *json_invoicerequest(struct command *cmd,
 	 * - if it supports bolt12 invoice request features:
 	 *   - MUST set `invreq_features`.`features` to the bitmap of features.
 	 */
-	invreq->invreq_features = tal_dup_talarr(invreq, u8,
-		plugin_feature_set(cmd->plugin)->bits[BOLT12_INVREQ_FEATURE]);
 
 	if (we_want_blinded_path(cmd->plugin, od->fronting_nodes, false)) {
 		struct invrequest_data *idata = tal(cmd, struct invrequest_data);

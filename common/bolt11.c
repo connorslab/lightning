@@ -967,12 +967,6 @@ struct bolt11 *bolt11_decode_nosig(const tal_t *ctx, const char *str,
 		return decode_fail(b11, fail,
 				   "must have either 'd' or 'h' field");
 
-	/* Also catches invoices with no features field at all. Inspection tools
-	 * pass NULL; payment readers supply the local feature set. */
-	if (our_features
-	    && feature_offered(our_features->bits[BOLT11_FEATURE], OPT_BLAKE2B)
-	    && !feature_is_set(b11->features, OPT_BLAKE2B))
-		return decode_fail(b11, fail, "Missing required option_blake2b invoice feature");
 	hash_u5_done(&hu5, hash);
 	*sig = tal_dup_arr(ctx, u5, data, data_len, 0);
 

@@ -1684,7 +1684,6 @@ static void connect_init(struct daemon *daemon, const u8 *msg)
 				    &daemon->always_use_proxy,
 				    &daemon->dev_allow_localhost,
 				    &daemon->use_dns,
-				    &daemon->blake2b_strict_peers,
 				    &tor_password,
 				    &daemon->timeout_secs,
 				    &daemon->websocket_helper,

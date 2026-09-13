@@ -33,14 +33,10 @@ const char *feature_place_names[] = {
 };
 
 static const struct feature_style feature_styles[] = {
-	/* Optional for recovery peering; compulsory on payment documents. */
+	/* Optional declaration preserves legacy recovery connectivity. */
 	{ OPT_BLAKE2B,
 	  .copy_style = { [INIT_FEATURE] = FEATURE_REPRESENT_AS_OPTIONAL,
-			  [NODE_ANNOUNCE_FEATURE] = FEATURE_REPRESENT_AS_OPTIONAL,
-			  [BOLT11_FEATURE] = FEATURE_REPRESENT,
-			  [BOLT12_OFFER_FEATURE] = FEATURE_REPRESENT,
-			  [BOLT12_INVREQ_FEATURE] = FEATURE_REPRESENT,
-			  [BOLT12_INVOICE_FEATURE] = FEATURE_REPRESENT } },
+			  [NODE_ANNOUNCE_FEATURE] = FEATURE_REPRESENT_AS_OPTIONAL } },
 	{ OPT_DATA_LOSS_PROTECT,
 	  .copy_style = { [INIT_FEATURE] = FEATURE_REPRESENT,
 			  [NODE_ANNOUNCE_FEATURE] = FEATURE_REPRESENT } },
@@ -406,14 +402,6 @@ int features_unsupported(const struct feature_set *our_features,
 			 const u8 *their_features,
 			 enum feature_place p)
 {
-	/* A Blake2b payment document must identify itself, even when both chains
-	 * share their genesis and address prefixes. No such requirement for init:
-	 * migration mode deliberately retains legacy recovery connections. */
-	if ((p == BOLT11_FEATURE || p == BOLT12_OFFER_FEATURE
-	     || p == BOLT12_INVREQ_FEATURE || p == BOLT12_INVOICE_FEATURE)
-	    && feature_offered(our_features->bits[p], OPT_BLAKE2B)
-	    && !feature_is_set(their_features, OPT_BLAKE2B))
-		return OPT_BLAKE2B;
 	return all_supported_features(our_features, their_features, p);
 }
 

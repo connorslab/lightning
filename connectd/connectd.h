@@ -335,7 +335,6 @@ struct daemon {
 	/* There are DNS seeds we can use to look up node addresses as a last
 	 * resort, but doing so leaks our address so can be disabled. */
 	bool use_dns;
-	bool blake2b_strict_peers;
 
 	/* File descriptors to listen on once we're activated. */
 	const struct listen_fd **listen_fds;

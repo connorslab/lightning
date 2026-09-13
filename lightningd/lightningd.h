@@ -310,8 +310,6 @@ struct lightningd {
 
 	/* Speedup gossip propagation, for testing. */
 	bool dev_fast_gossip;
-	/* Optional local policy: never an on-wire compulsory init feature. */
-	bool blake2b_strict_peers;
 	bool dev_fast_gossip_prune;
 	bool dev_throttle_gossip;
 	bool dev_suppress_gossip;

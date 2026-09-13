@@ -44,6 +44,37 @@ static void check(const char *raw, const char *code, size_t in, u8 ht, u8 st,
  assert(!bitcoin_unified_sighash(tx->wtx, in, ht, spent, n-1, &exec, &actual));
  assert(!bitcoin_unified_sighash(tx->wtx, tx->wtx->num_inputs, ht, spent, n, &exec, &actual));
 }
+/* BIP143 reference for this one-input/one-output test. libwally rejects unknown
+ * hash-type bits at its API boundary, whereas pre-unified consensus hashes them. */
+static void legacy_hash(const struct bitcoin_tx *tx, const u8 *code, u32 ht,
+                        struct sha256_double *digest)
+{
+ struct sha256_ctx part, msg;
+ struct sha256_double prevouts, sequences, outputs;
+ sha256_init(&part);
+ unified_prevout(&part, &tx->wtx->inputs[0]);
+ sha256_double_done(&part, &prevouts);
+ sha256_init(&part);
+ sha256_le32(&part, tx->wtx->inputs[0].sequence);
+ sha256_double_done(&part, &sequences);
+ sha256_init(&part);
+ unified_output(&part, tx->wtx->outputs[0].satoshi,
+                tx->wtx->outputs[0].script, tx->wtx->outputs[0].script_len);
+ sha256_double_done(&part, &outputs);
+ sha256_init(&msg);
+ sha256_le32(&msg, tx->wtx->version);
+ sha256_update(&msg, &prevouts, sizeof(prevouts));
+ sha256_update(&msg, &sequences, sizeof(sequences));
+ unified_prevout(&msg, &tx->wtx->inputs[0]);
+ unified_script(&msg, code, tal_bytelen(code));
+ sha256_le64(&msg, 100000);
+ sha256_le32(&msg, tx->wtx->inputs[0].sequence);
+ sha256_update(&msg, &outputs, sizeof(outputs));
+ sha256_le32(&msg, tx->wtx->locktime);
+ sha256_le32(&msg, ht);
+ sha256_double_done(&msg, digest);
+}
+
 static void check_signing(void)
 {
  struct privkey key = { .secret.data = { 1 } };
@@ -65,9 +96,12 @@ static void check_signing(void)
  assert(decoded.sighash_type == (SIGHASH_ALL | SIGHASH_UNIFIED));
  assert(check_tx_sig(tx, 0, NULL, code, &pub, &decoded));
  /* A legacy BIP143 verifier rejects this signature even with the same byte. */
- struct sha256_double old_digest;
+ struct sha256_double old_digest, wally_digest;
  assert(wally_tx_get_btc_signature_hash(tx->wtx, 0, code, tal_bytelen(code),
-       100000, 0x21, WALLY_TX_FLAG_USE_WITNESS, old_digest.sha.u.u8, 32) == WALLY_OK);
+       100000, 0x01, WALLY_TX_FLAG_USE_WITNESS, wally_digest.sha.u.u8, 32) == WALLY_OK);
+ legacy_hash(tx, code, 0x01, &old_digest);
+ assert(memcmp(&old_digest, &wally_digest, sizeof(old_digest)) == 0);
+ legacy_hash(tx, code, 0x21, &old_digest);
  assert(!check_signed_hash(&old_digest, &unified.s, &pub));
  legacy = unified;
  legacy.sighash_type = SIGHASH_ALL;

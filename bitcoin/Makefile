@@ -17,6 +17,7 @@ BITCOIN_SRC :=					\
 	bitcoin/signature.c			\
 	bitcoin/tx.c				\
 	bitcoin/tx_parts.c			\
+	bitcoin/unified_sighash.c		\
 	bitcoin/varint.c
 
 BITCOIN_OBJS := $(BITCOIN_SRC:.c=.o)
@@ -38,6 +39,7 @@ BITCOIN_HEADERS := bitcoin/address.h		\
 	bitcoin/signature.h			\
 	bitcoin/tx.h				\
 	bitcoin/tx_parts.h			\
+	bitcoin/unified_sighash.h		\
 	bitcoin/varint.h
 
 ALL_C_HEADERS += $(BITCOIN_HEADERS)

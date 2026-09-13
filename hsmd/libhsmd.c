@@ -587,6 +587,9 @@ static bool sign_unified_wallet_input(struct wally_psbt *psbt, size_t i,
 			return false;
 	} else {
 		u8 *expected = scriptpubkey_p2wpkh(tmpctx, pubkey);
+		if (is_p2sh(spk, tal_bytelen(spk), NULL))
+			expected = scriptpubkey_p2sh(tmpctx,
+				bitcoin_redeem_p2sh_p2wpkh(tmpctx, pubkey));
 		if (!memeq(expected, tal_bytelen(expected), spk, tal_bytelen(spk)))
 			return false;
 		exec.script_code = p2wpkh_scriptcode(tmpctx, pubkey);
@@ -1868,6 +1871,27 @@ static u8 *handle_sign_anchorspend(struct hsmd_client *c, const u8 *msg_in)
 	get_channel_seed(&peer_id, dbid, &seed);
 	derive_basepoints(&seed, &local_funding_pubkey, NULL, &secrets, NULL);
 
+	if (!is_elements(chainparams)) {
+		const u8 *wscript = bitcoin_wscript_anchor(tmpctx, &local_funding_pubkey);
+		const u8 *spk = scriptpubkey_p2wsh(tmpctx, wscript);
+		bool signed_anchor = false;
+		for (size_t i = 0; i < psbt->num_inputs; i++) {
+			const struct wally_tx_output *out = psbt->inputs[i].witness_utxo;
+			if (!out || !memeq(out->script, out->script_len, spk, tal_bytelen(spk)))
+				continue;
+			struct hsm_utxo anchor = { .amount = amount_sat(out->satoshi),
+				.scriptPubkey = (u8 *)spk };
+			psbt_input_set_witscript(psbt, i, wscript);
+			if (wally_psbt_input_set_sighash(&psbt->inputs[i], SIGHASH_ALL | SIGHASH_UNIFIED) != WALLY_OK
+			    || !sign_unified_wallet_input(psbt, i, &anchor,
+						 &secrets.funding_privkey, &local_funding_pubkey))
+				return hsmd_status_bad_request(c, msg_in, "Cannot sign unified anchor input");
+			signed_anchor = true;
+		}
+		if (!signed_anchor)
+			return hsmd_status_bad_request(c, msg_in, "No matching anchor input");
+		return towire_hsmd_sign_anchorspend_reply(NULL, psbt);
+	}
 	tal_wally_start();
 	ret = wally_psbt_sign(psbt, secrets.funding_privkey.secret.data,
 			      sizeof(secrets.funding_privkey.secret.data),

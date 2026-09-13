@@ -6,6 +6,7 @@
 #include <common/utils.h>
 #include <common/wire_error.h>
 #include <connectd/connectd.h>
+#include <connectd/blake2b_identity.h>
 #include <connectd/connectd_wiregen.h>
 #include <connectd/netaddress.h>
 #include <connectd/peer_exchange_initmsg.h>
@@ -93,6 +94,21 @@ static struct io_plan *peer_init_received(struct io_conn *conn,
 	 *  - upon receiving `networks` containing no common chains
 	 *    - MAY close the connection.
 	 */
+	/* A shared genesis hash alone cannot distinguish header-v2 consensus.
+	 * Fail closed, in both directions, before registering the peer or gossip.
+	 * Keep Elements behavior unchanged: this declaration is Bitcoin-only. */
+	if (!chainparams->is_elements
+	    && (!blake2b_identity_matches(tlvs->blake2b_identity,
+					 tal_count(tlvs->blake2b_identity))
+		|| !tlvs->networks
+		|| !contains_common_chain(tlvs->networks))) {
+		status_peer_debug(&peer->id,
+				  "Missing or incompatible Blake2b network identity, closing");
+		msg = towire_warningfmt(NULL, NULL,
+				       "Blake2b identity and matching network required");
+		msg = cryptomsg_encrypt_msg(NULL, &peer->cs, take(msg));
+		return io_write(conn, msg, tal_count(msg), io_close_cb, NULL);
+	}
 	if (tlvs->networks) {
 		if (!contains_common_chain(tlvs->networks)) {
 			status_peer_debug(&peer->id,
@@ -237,6 +253,10 @@ struct io_plan *peer_exchange_initmsg(struct io_conn *conn,
 	 *     channels for.
 	 */
 	tlvs = tlv_init_tlvs_new(tmpctx);
+	if (!chainparams->is_elements)
+		tlvs->blake2b_identity = tal_dup_arr(tlvs, u8,
+			(const u8 *)BLAKE2B_IDENTITY,
+			sizeof(BLAKE2B_IDENTITY) - 1, 0);
 	tlvs->networks = tal_dup_arr(tlvs, struct bitcoin_blkid,
 				     &chainparams->genesis_blockhash, 1, 0);
 

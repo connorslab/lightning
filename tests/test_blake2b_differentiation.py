@@ -12,14 +12,14 @@ def test_blake2b_migration_accepts_legacy(node_factory):
     inv = blake.rpc.invoice(1000, 'blake', 'proposal test')['bolt11']
     assert len(inv) < 2000  # Field fits without truncation despite placeholder bit.
     assert blake.rpc.decodepay(inv)['payment_hash']
-    with pytest.raises(RpcError):
+    with pytest.raises(RpcError, match='feature'):
         legacy.rpc.decodepay(inv)
     legacy_inv = legacy.rpc.invoice(1000, 'legacy', 'proposal test')['bolt11']
-    with pytest.raises(RpcError):
+    with pytest.raises(RpcError, match='feature'):
         blake.rpc.decodepay(legacy_inv)
     offer = blake.rpc.offer('1000msat', 'proposal offer')['bolt12']
     # Fetch validates an offer before attempting any payment or routing.
-    with pytest.raises(RpcError):
+    with pytest.raises(RpcError, match='feature'):
         legacy.rpc.fetchinvoice(offer)
 
 
@@ -41,3 +41,6 @@ def test_blake2b_strict_accepts_blake_and_reconnects(node_factory):
     a.rpc.disconnect(b.info['id'])
     b.rpc.connect(a.info['id'], 'localhost', a.port)
     assert b.rpc.listpeers()['peers'][0]['connected']
+    offer = a.rpc.offer('1000msat', 'compatible offer')['bolt12']
+    invoice = b.rpc.fetchinvoice(offer)['invoice']
+    assert b.rpc.decode(invoice)['valid']

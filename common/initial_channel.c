@@ -207,6 +207,9 @@ struct channel_type *channel_upgradable_type(const tal_t *ctx,
 struct channel_type *channel_desired_type(const tal_t *ctx,
 					  const struct channel *channel)
 {
+	if (channel_has(channel, OPT_UNIFIED_SIGS))
+		return channel_type_dup(ctx, channel->type);
+
 	/* We don't actually want to downgrade anchors! */
 	if (channel_has(channel, OPT_ANCHORS_ZERO_FEE_HTLC_TX))
 		return channel_type_anchors_zero_fee_htlc(ctx);

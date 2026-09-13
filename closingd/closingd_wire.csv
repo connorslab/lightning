@@ -9,6 +9,7 @@
 # Begin!  (passes peer fd, gossipd-client fd)
 msgtype,closingd_init,2001
 msgdata,closingd_init,chainparams,chainparams,
+msgdata,closingd_init,unified_sigs,bool,
 msgdata,closingd_init,channel_id,channel_id,
 msgdata,closingd_init,funding,bitcoin_outpoint,
 msgdata,closingd_init,funding_satoshi,amount_sat,

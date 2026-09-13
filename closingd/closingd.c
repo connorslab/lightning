@@ -26,6 +26,9 @@
 #define REQ_FD STDIN_FILENO
 #define HSM_FD 4
 
+/* One channel per closingd; supplied from its persisted channel type. */
+static bool unified_sigs;
+
 static void notify(enum log_level level, const char *fmt, ...)
 {
 	va_list ap;
@@ -110,6 +113,8 @@ static struct bitcoin_tx *close_tx(const tal_t *ctx,
 	if (wrong_funding)
 		bitcoin_tx_input_set_outpoint(tx, 0, wrong_funding);
 
+	if (unified_sigs)
+		bitcoin_tx_require_unified(tx, 0, SIGHASH_ALL);
 	return tx;
 }
 
@@ -208,7 +213,7 @@ static void send_offer(struct per_peer_state *pps,
 	} else
 		close_tlvs = NULL;
 
-	assert(our_sig.sighash_type == SIGHASH_ALL);
+	assert(our_sig.sighash_type == (SIGHASH_ALL | (unified_sigs ? SIGHASH_UNIFIED : 0)));
 	msg = towire_closing_signed(NULL, channel_id, fee_to_offer, &our_sig.s,
 				    close_tlvs);
 
@@ -283,7 +288,7 @@ receive_offer(struct per_peer_state *pps,
 			msg = tal_free(msg);
 	} while (!msg);
 
-	their_sig.sighash_type = SIGHASH_ALL;
+	their_sig.sighash_type = SIGHASH_ALL | (unified_sigs ? SIGHASH_UNIFIED : 0);
 	if (!fromwire_closing_signed(msg, msg, &their_channel_id,
 				     &received_fee, &their_sig.s,
 				     &close_tlvs))
@@ -854,6 +859,7 @@ int main(int argc, char *argv[])
 	msg = wire_sync_read(tmpctx, REQ_FD);
 	if (!fromwire_closingd_init(ctx, msg,
 				    &chainparams,
+				    &unified_sigs,
 				    &channel_id,
 				    &funding,
 				    &funding_sats,

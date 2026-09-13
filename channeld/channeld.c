@@ -1106,8 +1106,7 @@ static struct bitcoin_signature *calc_commitsigs(const tal_t *ctx,
 							  txs[i+1]->wtx->inputs[0].index);
 		msg = towire_hsmd_sign_remote_htlc_tx(NULL, txs[i + 1], wscript,
 						      remote_per_commit,
-						      channel_has_anchors(peer->channel),
-			       channel_has(peer->channel, OPT_UNIFIED_SIGS));
+						      channel_has_anchors(peer->channel));
 
 		msg = hsm_req(tmpctx, take(msg));
 		if (!fromwire_hsmd_sign_tx_reply(msg, &htlc_sigs[i]))
@@ -2173,7 +2172,8 @@ static struct commitsig_info *handle_peer_commit_sig(struct peer *peer,
 	/* SIGHASH_ALL is implied. */
 	commit_sig.sighash_type = channel_type_sighash(peer->channel->type, SIGHASH_ALL);
 	htlc_sigs = unraw_sigs(tmpctx, raw_sigs,
-			       channel_has_anchors(peer->channel));
+			       channel_has_anchors(peer->channel),
+			       channel_has(peer->channel, OPT_UNIFIED_SIGS));
 
 	if (commit_index) {
 		outpoint = peer->splice_state->inflights[commit_index - 1]->outpoint;
@@ -3941,13 +3941,15 @@ static void resume_splice_negotiation(struct peer *peer,
 	/* BOLT-a8b9f495cac28124c69cc5ee429f9ef2bacb9921 #2:
 	 * Both nodes:
 	 *   - MUST sign the transaction using SIGHASH_ALL */
-	splice_sig.sighash_type = SIGHASH_ALL;
+	splice_sig.sighash_type = channel_type_sighash(peer->channel->type, SIGHASH_ALL);
 
 	bitcoin_tx = bitcoin_tx_with_psbt(tmpctx, current_psbt);
 
 	status_info("Splice signing tx: %s",
 		    tal_hex(tmpctx, linearize_tx(tmpctx, bitcoin_tx)));
 
+	if (channel_has(peer->channel, OPT_UNIFIED_SIGS))
+		bitcoin_tx_require_unified(bitcoin_tx, splice_funding_index, SIGHASH_ALL);
 	msg = towire_hsmd_sign_splice_tx(tmpctx, bitcoin_tx,
 					 &peer->channel->funding_pubkey[REMOTE],
 					 splice_funding_index);
@@ -4074,7 +4076,7 @@ static void resume_splice_negotiation(struct peer *peer,
 		/* BOLT-a8b9f495cac28124c69cc5ee429f9ef2bacb9921 #2:
 		 * Both nodes:
 		 *   - MUST sign the transaction using SIGHASH_ALL */
-		their_sig->sighash_type = SIGHASH_ALL;
+		their_sig->sighash_type = channel_type_sighash(peer->channel->type, SIGHASH_ALL);
 		their_sig->s = *their_txsigs_tlvs->shared_input_signature;
 
 		/* Set the commit_sig on the commitment tx psbt */
@@ -4711,13 +4713,15 @@ static void splice_initiator_user_finalized(struct peer *peer)
 	 * we can build a complete `tx_signatures` message when there are two
 	 * or more shared outputs between mulitple peers */
 
-	splice_sig.sighash_type = SIGHASH_ALL;
+	splice_sig.sighash_type = channel_type_sighash(peer->channel->type, SIGHASH_ALL);
 
 	bitcoin_tx = bitcoin_tx_with_psbt(tmpctx, ictx->current_psbt);
 
 	status_info("Splice pre-signing tx: %s",
 		    tal_hex(tmpctx, linearize_tx(tmpctx, bitcoin_tx)));
 
+	if (channel_has(peer->channel, OPT_UNIFIED_SIGS))
+		bitcoin_tx_require_unified(bitcoin_tx, splice_funding_index, SIGHASH_ALL);
 	msg = towire_hsmd_sign_splice_tx(tmpctx, bitcoin_tx,
 					 &peer->channel->funding_pubkey[REMOTE],
 					 splice_funding_index);

@@ -255,6 +255,8 @@ static struct bitcoin_tx *sign_last_tx(const tal_t *ctx,
 	u64 commit_index = channel->next_index[LOCAL] - 1;
 	struct bitcoin_tx *tx = clone_bitcoin_tx(ctx, last_tx);
 
+	if (channel_type_has(channel->type, OPT_UNIFIED_SIGS))
+		bitcoin_tx_require_unified(tx, 0, SIGHASH_ALL);
 	assert(!tx->wtx->inputs[0].witness);
 	msg = towire_hsmd_sign_commitment_tx(NULL,
 					     &channel->peer->id,

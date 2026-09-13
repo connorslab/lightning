@@ -565,6 +565,7 @@ void peer_start_closingd(struct channel *channel, struct peer_fd *peer_fd)
 
 	initmsg = towire_closingd_init(tmpctx,
 				       chainparams,
+				       channel_type_has(channel->type, OPT_UNIFIED_SIGS),
 				       &channel->cid,
 				       &channel->funding,
 				       channel->funding_sats,

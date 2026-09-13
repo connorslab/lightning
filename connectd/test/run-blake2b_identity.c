@@ -12,6 +12,11 @@ int main(int argc, char *argv[])
 	u8 *msg, *global, *features, *empty, *optional;
 	common_setup(argv[0]);
 	ours = feature_set_for_feature(tmpctx, OPT_BLAKE2B_NETWORK);
+	/* Published big-endian wire vector: 04 followed by 530 zero bytes. */
+	assert(tal_count(ours->bits[INIT_FEATURE]) == 531);
+	assert(ours->bits[INIT_FEATURE][0] == 4);
+	for (size_t i = 1; i < 531; i++)
+		assert(ours->bits[INIT_FEATURE][i] == 0);
 	legacy = feature_set_for_feature(tmpctx, OPT_STATIC_REMOTEKEY);
 	empty = tal_arr(tmpctx, u8, 0);
 	assert(!feature_offered(empty, OPT_BLAKE2B_NETWORK));

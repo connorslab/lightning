@@ -8,6 +8,11 @@ This is NOT a BOLT assignment or an agreed community standard. The published
 BOLT 9 table does not assign this pair; that does not establish absence of
 private experiments. Coordinate allocation with implementers before release.
 
+Standalone feature-vector test values (big-endian): required = `04` followed
+by 530 zero bytes; optional = `08` followed by 530 zero bytes. These are bit
+indices, not masks. Merge the bit into the existing vector; do not replace other
+features. The high provisional index costs 531 bytes in the init feature vector.
+
 The feature means this connection operates on Bitcoin Blake2b header-v2
 consensus, not merely that the binary can parse Blake2b blocks. A SHA256 session
 MUST NOT advertise it, including in a binary supporting both networks.

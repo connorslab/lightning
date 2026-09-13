@@ -40,3 +40,9 @@ fixes and database schema 284 (previously 282). An existing 282 database needs
 an irreversible upgrade, which this development version may require explicitly
 authorizing with --database-upgrade=true. Back up the full node state first;
 afterward .2 cannot open that database. This build does not deploy or migrate it.
+
+UNIFIED-PROPOSAL.md describes draft channel negotiation and migration.
+The compiled unified digest foundation is not connected to HSM/channel signing.
+This executable DOES NOT yet enforce SIGHASH_UNIFIED on channels and MUST NOT
+be represented as implementing the unified-channel requirement. It does not
+advertise option_unified_sigs. See the proposal's explicit implementation gates.

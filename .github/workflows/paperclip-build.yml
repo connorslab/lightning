@@ -50,6 +50,7 @@ jobs:
           cp doc/PAPERCLIP-BUILD.md stage/BUILD-NOTES.md
           git rev-parse HEAD > stage/SOURCE-COMMIT
           cp doc/BLAKE2B-DIFFERENTIATION.md stage/PROPOSAL.md
+          cp doc/BLAKE2B-UNIFIED-PROPOSAL.md stage/UNIFIED-PROPOSAL.md
           XZ_OPT='-T2 -1' tar --owner=0 --group=0 -C stage -cJf dist/paperclip-cln-proposal-ubuntu24.04-amd64.tar.xz .
           cp stage/SOURCE-COMMIT stage/BUILD-NOTES.md dist/
           cd dist

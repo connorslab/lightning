@@ -33,6 +33,8 @@ const char *feature_place_names[] = {
 };
 
 static const struct feature_style feature_styles[] = {
+	{ OPT_BLAKE2B_NETWORK,
+	  .copy_style = { [INIT_FEATURE] = FEATURE_REPRESENT } },
 	{ OPT_DATA_LOSS_PROTECT,
 	  .copy_style = { [INIT_FEATURE] = FEATURE_REPRESENT,
 			  [NODE_ANNOUNCE_FEATURE] = FEATURE_REPRESENT } },
@@ -492,6 +494,9 @@ const char *feature_name(const tal_t *ctx, size_t f)
 		NULL, /* 170/171 */
 	};
 
+	if (COMPULSORY_FEATURE(f) == OPT_BLAKE2B_NETWORK)
+		return tal_fmt(ctx, "option_blake2b_network/%s",
+			       (f & 1) ? "odd" : "even");
 	if (f / 2 >= ARRAY_SIZE(fnames) || !fnames[f / 2])
 		return tal_fmt(ctx, "option_unknown_%zu/%s",
 			       COMPULSORY_FEATURE(f), (f & 1) ? "odd" : "even");

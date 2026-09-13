@@ -1829,6 +1829,9 @@ void handle_early_opts(struct lightningd *ld, int argc, char *argv[])
 	/* No anchors if we're elements */
 	if (chainparams->is_elements) {
 		feature_set_sub(ld->our_features,
+			take(feature_set_for_feature(NULL,
+				COMPULSORY_FEATURE(OPT_BLAKE2B_NETWORK))));
+		feature_set_sub(ld->our_features,
 				feature_set_for_feature(tmpctx,
 							OPTIONAL_FEATURE(OPT_ANCHORS_ZERO_FEE_HTLC_TX)));
 	}

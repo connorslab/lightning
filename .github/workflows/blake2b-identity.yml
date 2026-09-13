@@ -16,5 +16,6 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y autoconf automake build-essential libtool libsqlite3-dev libffi-dev zlib1g-dev libsodium-dev gettext lowdown libgmp-dev
       - uses: astral-sh/setup-uv@v6
       - run: ./configure --disable-rust --enable-debugbuild
-      - run: uv run make -j2 lightningd/lightning_connectd connectd/test/run-blake2b_identity
+      - run: uv run make -j2 lightningd/lightningd lightningd/lightning_connectd connectd/test/run-blake2b_identity
       - run: ./connectd/test/run-blake2b_identity
+

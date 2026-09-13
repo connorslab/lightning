@@ -103,10 +103,48 @@ BOLT wire conventions. These are test allocations, not registry assignments.
 Unknown versions, inconsistent state or unexpected phases stop the upgrade;
 they do not authorize a state transition. No secret is carried in this TLV.
 
-Detailed signature-transfer TLVs and the exact canonical snapshot encoding
-must be frozen with interoperability vectors before implementing this wire
-proposal. Reestablish is a resumable checkpoint advertisement, not by itself
-permission to revoke or sign. The proposed state machine is:
+For this draft, extend `commitment_signed` and `revoke_and_ack` with an odd
+TLV 32769 carrying version:u16=0 and upgrade_id:32 bytes. TLV numbers are scoped
+to each message. The commitment signature signs the peer's replacement with
+0x21 and num_htlcs must be zero. The revocation remains the standard revocation
+of the prior local commitment; its TLV binds it to this upgrade. Reject a tagged
+message outside the corresponding pending phase, and reject an untagged one
+during upgrade. These semantics are only negotiated by the new capability.
+
+Canonical transcript proposal: version:u16, shared_chain_hash:32,
+funding_outpoint:36 in Bitcoin wire order, funding_value:u64,
+funding_script:u16 length plus bytes, node_A:33, node_B:33 (ascending byte order),
+old_type:u16 length plus minimal feature bytes, target_type:same encoding,
+current_commitment_A:u64, current_commitment_B:u64,
+old_unsigned_commitment_A_sha256:32, old_unsigned_commitment_B_sha256:32,
+replacement_unsigned_commitment_A_sha256:32,
+replacement_unsigned_commitment_B_sha256:32, nonce_A:32, nonce_B:32.
+Other integers use BOLT big-endian encoding. Transaction hashes here are raw
+single SHA256 of Bitcoin non-witness serialization, not display-order txids.
+Types use the minimal BOLT feature-vector representation. Commitment A means
+the transaction enforceable by node A; both replacements advance their owner's
+counter by one. Each peer reconstructs and validates the transactions from its
+own durable channel state; accepting hashes supplied by the other peer is not
+validation. All balances, fee parameters, delays, scripts, keys and funding
+metadata must match local state. upgrade_id is TaggedHash("CLNUnifiedUpgrade",
+transcript); state_hash is SHA256(transcript); target_type_hash is SHA256 of the
+minimal target feature bytes. Mismatches abort before any revocation.
+
+The reestablish phase values are 0=offer, 1=quiescent, 2=replacement_stored,
+3=revocation_sent, 4=complete. An offer may use a zero upgrade_id until both
+nonces and snapshots have been exchanged. The nonce/snapshot exchange needs a
+separate proposed odd message 32771: channel_id:32, version:u16=0,
+nonce:32, transcript_prefix:u16 length plus bytes (the canonical transcript
+through replacement_unsigned_commitment_B_sha256, excluding both nonces).
+It is accepted only in negotiated quiescence and only once per upgrade unless
+byte-identical on retry. The first upgrade_id becomes fixed when both offers
+are durably recorded. A peer reporting a phase ahead of our state is not a
+substitute for missing verified signatures or revocation secrets.
+
+These candidate allocations and encodings require independent review and
+interoperability vectors before activation. Reestablish is a resumable
+checkpoint advertisement, not by itself permission to revoke or sign.
+The proposed state machine is:
 
 1. Both peers explicitly consent; complete normal reestablish first. Enter
    negotiated quiescence. Version 0 requires zero outstanding HTLCs, no pending

@@ -484,8 +484,6 @@ struct command_result *json_offer(struct command *cmd,
 	bool *proportional, *optional_recurrence;
 
 	offinfo->offer = offer = tlv_offer_new(offinfo);
-	offer->offer_features = tal_dup_talarr(offer, u8,
-		plugin_feature_set(cmd->plugin)->bits[BOLT12_OFFER_FEATURE]);
 
 	if (!param_check(cmd, buffer, params,
 			 p_req("amount", param_amount, offer),
@@ -519,6 +517,11 @@ struct command_result *json_offer(struct command *cmd,
 			 NULL))
 		return command_param_failed();
 
+
+	/* Usage discovery runs before plugin initialization: access features only
+	 * after param_check has admitted a real command. */
+	offer->offer_features = tal_dup_talarr(offer, u8,
+		plugin_feature_set(cmd->plugin)->bits[BOLT12_OFFER_FEATURE]);
 
 	/* If they don't specify explicitly, use config (if any) */
 	if (!offinfo->fronting_nodes)

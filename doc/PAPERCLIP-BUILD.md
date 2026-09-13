@@ -1,34 +1,36 @@
-# Paperclip development baseline
+# Paperclip Blake2b differentiation proposal
 
-Target: Ubuntu 24.04 amd64. This is a development rebuild, not a new protocol
-release, reproducible-build claim or replacement signed upstream release.
-SOURCE-COMMIT identifies the source; SHA256SUMS checks archive integrity but
-is not a publisher signature. Runtime dependencies must be installed separately.
-No production installation is performed by this build.
+This is an experimental Ubuntu 24.04 amd64 build based on
+v26.06.7-blake2b.2. It adds actual feature signaling, payment-document checks
+and a configurable local peer-admission policy. It is not a full migration
+implementation or a registered protocol release. Do not install over funded
+nodes until partner coordination and channel-recovery tests are complete.
 
-## Compared with v26.06.7-blake2b.2
+Configuration (restart required; no production node changed by building):
 
-Runtime source is unchanged. Additions are build automation and documentation.
-The experimental mandatory 4242/4243 feature and custom identity TLV have been
-withdrawn. This package does not implement a replacement feature, unified channel
-signatures, migration orchestration or invoice network isolation. Do not describe
-it as migration-compliant or as a safe solution for dual-chain channel exposure.
+    blake2b-peer-policy=migration
 
-## How the existing handshake works
+Default. Legacy peer connections remain possible, following the migration plan.
+This is not recovery-only enforcement: normal legacy channel behavior remains.
 
-1. Lightning's encrypted transport authenticates the peer's node public key.
-2. Peers exchange init messages containing feature vectors and a networks TLV.
-3. Unsupported required (even) features are rejected. Unknown optional (odd)
-   features can be ignored under the normal feature-negotiation rules.
-4. If a networks list is supplied with no common configured genesis hash,
-   connectd rejects the connection. An omitted list is not rejected solely for
-   being absent. A shared genesis hash cannot distinguish Blake2b from SHA256.
+    blake2b-peer-policy=strict
 
-There is NO new handshake in this build. It retains compatibility with legacy
-peers, but that alone does not make cross-network channel operation safe.
+Reject inbound/outbound init messages lacking option_blake2b or a matching
+networks list, before peer admission. Existing peers have no exemption. For
+fresh or fully migrated nodes only: enabling it can strand legacy channel
+partners. It does not close channels automatically.
 
-Future standardized work requires the agreed option_blake2b registry allocation
-and detailed migration specification. The intended migration design uses optional
-peer/node signaling and required invoice/offer signaling, preserving the shared
-chain identity until the coordinated later transition. None of that is silently
-substituted with a Paperclip-specific bit in this build.
+Both modes advertise an odd init/node bit, and an even BOLT11/12 payment bit.
+See PROPOSAL.md for semantics and limitations. The temporary pair 4110/4111
+comes from the plan's placeholders; it is NOT the final registry allocation.
+
+The shared genesis and payment hashes remain unchanged. No unified signing,
+channel type upgrade, migration daemon, replay protection or custom handshake
+message is added. Keysend/raw RPC bypass of invoice semantics is not a proof of
+network identity; do not use these to infer chain compatibility. Malicious peers
+can copy the feature bit. Strict mode separates honest differently configured
+peers, not adversaries claiming false capabilities.
+
+SHA256SUMS verifies archive integrity; it is not a publisher signature.
+SOURCE-COMMIT identifies the exact source. Runtime OS dependencies must be
+installed separately. This development build uses the Rust small profile.

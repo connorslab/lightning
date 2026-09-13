@@ -908,6 +908,7 @@ static struct feature_set *default_features(const tal_t *ctx)
 	 */
 	struct feature_set *ret = NULL;
 	static const u32 features[] = {
+		COMPULSORY_FEATURE(OPT_BLAKE2B),
 		COMPULSORY_FEATURE(OPT_DATA_LOSS_PROTECT),
 		OPTIONAL_FEATURE(OPT_UPFRONT_SHUTDOWN_SCRIPT),
 		OPTIONAL_FEATURE(OPT_GOSSIP_QUERIES),

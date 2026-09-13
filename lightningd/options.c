@@ -1268,6 +1268,17 @@ static char *opt_set_shutdown_wrong_funding(struct lightningd *ld)
 	return NULL;
 }
 
+static char *opt_blake2b_peer_policy(const char *arg, struct lightningd *ld)
+{
+	if (streq(arg, "migration"))
+		ld->blake2b_strict_peers = false;
+	else if (streq(arg, "strict"))
+		ld->blake2b_strict_peers = true;
+	else
+		return "must be migration or strict";
+	return NULL;
+}
+
 static char *opt_set_peer_storage(struct lightningd *ld)
 {
 	if (!opt_deprecated_ok(ld, "experimental-peer-storage", NULL,
@@ -1585,6 +1596,8 @@ static void register_opts(struct lightningd *ld)
 		       "Sets the public TCP port to use for announcing discovered IPs.");
 	opt_register_noarg("--offline", opt_set_offline, ld,
 			   "Start in offline-mode (do not automatically reconnect and do not accept incoming connections)");
+	opt_register_arg("--blake2b-peer-policy", opt_blake2b_peer_policy, NULL, ld,
+			 "PROPOSAL: migration (default) retains legacy peers; strict requires Blake2b signaling");
 	clnopt_witharg("--autolisten", OPT_SHOWBOOL,
 		       opt_set_bool_arg, opt_show_bool,
 		       &ld->autolisten,
@@ -1829,6 +1842,8 @@ void handle_early_opts(struct lightningd *ld, int argc, char *argv[])
 	/* No anchors if we're elements */
 	if (chainparams->is_elements) {
 		feature_set_sub(ld->our_features,
+			take(feature_set_for_feature(NULL, OPT_BLAKE2B)));
+		feature_set_sub(ld->our_features,
 				feature_set_for_feature(tmpctx,
 							OPTIONAL_FEATURE(OPT_ANCHORS_ZERO_FEE_HTLC_TX)));
 	}
@@ -1887,6 +1902,8 @@ void handle_opts(struct lightningd *ld)
 	/* Now we know all the options, finish parsing and finish
 	 * populating ld->configvars with cmdline. */
 	parse_configvars_final(ld->configvars, true, ld->developer);
+	if (chainparams->is_elements && ld->blake2b_strict_peers)
+		errx(1, "blake2b-peer-policy=strict is not supported on Elements");
 
 	/* We keep a separate variable rather than overriding always_use_proxy,
 	 * so listconfigs shows the correct thing. */
@@ -1911,6 +1928,7 @@ bool opt_canon_bool(const char *val)
 bool is_known_opt_cb_arg(char *(*cb_arg)(const char *, void *))
 {
 	return cb_arg == (void *)opt_set_talstr
+		|| cb_arg == (void *)opt_blake2b_peer_policy
 		|| cb_arg == (void *)opt_add_proxy_addr
 		|| cb_arg == (void *)opt_force_feerates
 		|| cb_arg == (void *)opt_add_plugin

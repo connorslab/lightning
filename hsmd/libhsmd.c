@@ -608,8 +608,11 @@ static bool sign_unified_wallet_input(struct wally_psbt *psbt, size_t i,
 		if (!ok)
 			return false;
 		signature[64] = hash_type;
-		return wally_psbt_input_set_taproot_signature(&psbt->inputs[i],
-							     signature, sizeof(signature)) == WALLY_OK;
+		tal_wally_start();
+		ok = wally_psbt_input_set_taproot_signature(&psbt->inputs[i],
+						 signature, sizeof(signature)) == WALLY_OK;
+		tal_wally_end(psbt);
+		return ok;
 	}
 	sig.sighash_type = hash_type;
 	sign_hash(key, &digest, &sig.s);

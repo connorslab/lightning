@@ -55,6 +55,8 @@ jobs:
           chmod +x /tmp/paperclip-knots/bitcoind
           sudo cp /tmp/paperclip-knots/bitcoind /usr/local/bin/bitcoind
           uv run pytest -q tests/test_unified_transactions.py --timeout=120 --maxfail=1
+          uv run pytest -q tests/test_splicing.py::test_splice --timeout=120 --maxfail=1
+          EXPERIMENTAL_DUAL_FUND=1 uv run pytest -q tests/test_unified_transactions.py tests/test_splicing.py::test_splice --timeout=120 --maxfail=1
       - name: Package
         run: |
           mkdir dist

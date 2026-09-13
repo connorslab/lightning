@@ -1,6 +1,7 @@
 """Run only against isolated Knots regtest with Blake2b active from height 1."""
 from fixtures import *  # noqa: F401,F403
 from utils import only_one, wait_for, sync_blockheight
+import pytest
 
 
 def assert_unified_witnesses(bitcoind, txid, minimum):
@@ -16,6 +17,8 @@ def assert_unified_witnesses(bitcoind, txid, minimum):
     return tx
 
 
+@pytest.mark.openchannel('v1')
+@pytest.mark.openchannel('v2')
 def test_unified_channel_pay_restart_close_withdraw(node_factory, bitcoind):
     a, b = node_factory.line_graph(2, opts={'may_reconnect': True})
     channel = only_one(a.rpc.listpeerchannels()['channels'])
@@ -41,6 +44,8 @@ def test_unified_channel_pay_restart_close_withdraw(node_factory, bitcoind):
     assert bitcoind.rpc.getrawtransaction(result['txid'], True)['confirmations'] >= 1
 
 
+@pytest.mark.openchannel('v1')
+@pytest.mark.openchannel('v2')
 def test_unified_unilateral_close(node_factory, bitcoind):
     a, b = node_factory.line_graph(2, opts={'may_reconnect': True, 'allow_warning': True})
     funding = only_one(a.rpc.listpeerchannels()['channels'])['funding_txid']

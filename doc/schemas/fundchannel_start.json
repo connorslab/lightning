@@ -147,6 +147,7 @@
                 "anchors_zero_fee_htlc_tx/even",
                 "anchors/even",
                 "scid_alias/even",
+                "unified_sigs/even",
                 "zeroconf/even"
               ],
               "description": [

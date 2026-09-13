@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.parametrize('incoming', [False, True])
-@pytest.mark.parametrize('peer_features', ['-68', '69////////'])
+@pytest.mark.parametrize('peer_features', ['-68', '69/////////'])
 def test_blake2b_required_peer_bit(node_factory, incoming, peer_features):
     blake, legacy = node_factory.get_nodes(2, opts=[
         {'may_reconnect': True, 'allow_warning': True},

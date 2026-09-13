@@ -167,7 +167,9 @@ void bitcoin_tx_hash_for_sig(const struct bitcoin_tx *tx, unsigned int in,
 void bitcoin_tx_require_unified(struct bitcoin_tx *tx, size_t input,
 			       enum sighash_type base)
 {
-	if (is_elements(tx->chainparams) || input >= tx->psbt->num_inputs
+	size_t elements;
+	if (wally_psbt_is_elements(tx->psbt, &elements) != WALLY_OK || elements
+	    || input >= tx->psbt->num_inputs
 	    || wally_psbt_input_set_sighash(&tx->psbt->inputs[input],
 					base | SIGHASH_UNIFIED) != WALLY_OK)
 		errx(1, "Cannot set unified signing policy on transaction");

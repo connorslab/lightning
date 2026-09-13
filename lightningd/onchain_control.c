@@ -767,12 +767,19 @@ static const struct bitcoin_tx *onchain_signing_tx(const tal_t *ctx,
                         const struct bitcoin_tx *tx,
                         const struct onchain_signing_info *info)
 {
- if (channel_type_has(info->channel->type, OPT_UNIFIED_SIGS)) {
-  struct bitcoin_tx *copy = clone_bitcoin_tx(ctx, tx);
-  bitcoin_tx_require_unified(copy, 0, SIGHASH_ALL);
-  return copy;
- }
- return tx;
+	if (channel_type_has(info->channel->type, OPT_UNIFIED_SIGS)) {
+		struct bitcoin_tx *copy = clone_bitcoin_tx(ctx, tx);
+		enum sighash_type base = SIGHASH_ALL;
+		if (channel_type_has_anchors(info->channel->type)
+		    && (info->msgtype == WIRE_ONCHAIND_SPEND_HTLC_SUCCESS
+			|| info->msgtype == WIRE_ONCHAIND_SPEND_HTLC_TIMEOUT
+			|| info->msgtype == WIRE_ONCHAIND_SPEND_FULFILL
+			|| info->msgtype == WIRE_ONCHAIND_SPEND_HTLC_EXPIRED))
+			base = SIGHASH_SINGLE | SIGHASH_ANYONECANPAY;
+		bitcoin_tx_require_unified(copy, 0, base);
+		return copy;
+	}
+	return tx;
 }
 
 static u8 *sign_tx_to_us(const tal_t *ctx,

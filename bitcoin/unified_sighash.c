@@ -135,7 +135,9 @@ bool bitcoin_tx_unified_sighash(const struct bitcoin_tx *tx, size_t input,
 {
 	struct bitcoin_tx_output *spent;
 	bool ok = false;
-	if (!tx || !tx->psbt || !tx->wtx || is_elements(tx->chainparams)
+	size_t elements;
+	if (!tx || !tx->psbt || !tx->wtx
+	    || wally_psbt_is_elements(tx->psbt, &elements) != WALLY_OK || elements
 	    || tx->psbt->num_inputs != tx->wtx->num_inputs
 	    || input >= tx->wtx->num_inputs)
 		return false;

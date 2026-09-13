@@ -19,4 +19,10 @@ bool bitcoin_unified_sighash(const struct wally_tx *tx, size_t input,
 			    size_t num_spent,
 			    const struct unified_sighash_input *exec,
 			    struct sha256 *digest);
+
+/* Extract spent outputs from the PSBT. Missing or inconsistent metadata fails. */
+bool bitcoin_tx_unified_sighash(const struct bitcoin_tx *tx, size_t input,
+			       u8 hash_type,
+			       const struct unified_sighash_input *exec,
+			       struct sha256 *digest);
 #endif

@@ -5,6 +5,7 @@
 #include <bitcoin/pubkey.h>
 #include <bitcoin/signature.h>
 #include <bitcoin/tx.h>
+#include <bitcoin/unified_sighash.h>
 #include <ccan/mem/mem.h>
 #include <common/utils.h>
 #include <secp256k1_schnorrsig.h>
@@ -128,6 +129,17 @@ void bitcoin_tx_hash_for_sig(const struct bitcoin_tx *tx, unsigned int in,
 	struct amount_sat input_amt;
 	int flags = WALLY_TX_FLAG_USE_WITNESS;
 
+	if (sighash_type & SIGHASH_UNIFIED) {
+		struct unified_sighash_input exec = {
+			.script_type = 1, .script_code = script
+		};
+		/* This API is the segwit-v0 channel signing path. Taproot wallet
+		 * signing supplies its own script context to the unified API. */
+		if (!bitcoin_tx_unified_sighash(tx, in, sighash_type, &exec, &dest->sha))
+			fatal("Cannot compute unified sighash: missing or invalid prevout data");
+		return;
+	}
+
 	input_amt = psbt_input_get_amount(tx->psbt, in);
 	input_val_sats = input_amt.satoshis; /* Raw: type conversion */
 
@@ -203,15 +215,25 @@ bool check_tx_sig(const struct bitcoin_tx *tx, size_t input_num,
 	bool ret;
 
 	/* We only support a limited subset of sighash types. */
-	if (sig->sighash_type != SIGHASH_ALL) {
+	if (!sighash_type_valid(sig->sighash_type))
+		return false;
+	if ((sig->sighash_type & ~SIGHASH_UNIFIED) != SIGHASH_ALL) {
 		if (!witness_script)
 			return false;
-		if (sig->sighash_type != (SIGHASH_SINGLE|SIGHASH_ANYONECANPAY))
+		if ((sig->sighash_type & ~SIGHASH_UNIFIED) != (SIGHASH_SINGLE|SIGHASH_ANYONECANPAY))
 			return false;
 	}
 	assert(input_num < tx->wtx->num_inputs);
 
-	bitcoin_tx_hash_for_sig(tx, input_num, script, sig->sighash_type, &hash);
+	if (sig->sighash_type & SIGHASH_UNIFIED) {
+		struct unified_sighash_input exec = {
+			.script_type = 1, .script_code = script
+		};
+		if (!bitcoin_tx_unified_sighash(tx, input_num, sig->sighash_type,
+					      &exec, &hash.sha))
+			return false;
+	} else
+		bitcoin_tx_hash_for_sig(tx, input_num, script, sig->sighash_type, &hash);
 	dump_tx("check_tx_sig", tx, input_num, script, key, &hash);
 
 	ret = check_signed_hash(&hash, &sig->s, key);

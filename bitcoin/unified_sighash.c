@@ -1,5 +1,7 @@
 #include "config.h"
 #include <bitcoin/unified_sighash.h>
+#include <bitcoin/psbt.h>
+#include <wally_psbt.h>
 #include <ccan/crypto/sha256/sha256.h>
 #include <string.h>
 
@@ -124,4 +126,48 @@ bool bitcoin_unified_sighash(const struct wally_tx *tx, size_t input,
 	}
 	sha256_done(&msg, digest);
 	return true;
+}
+
+bool bitcoin_tx_unified_sighash(const struct bitcoin_tx *tx, size_t input,
+			       u8 hash_type,
+			       const struct unified_sighash_input *exec,
+			       struct sha256 *digest)
+{
+	struct bitcoin_tx_output *spent;
+	bool ok = false;
+	if (!tx || !tx->psbt || !tx->wtx || is_elements(tx->chainparams)
+	    || tx->psbt->num_inputs != tx->wtx->num_inputs
+	    || input >= tx->wtx->num_inputs)
+		return false;
+	spent = tal_arrz(NULL, struct bitcoin_tx_output, tx->wtx->num_inputs);
+	for (size_t i = 0; i < tx->wtx->num_inputs; i++) {
+		const struct wally_psbt_input *p = &tx->psbt->inputs[i];
+		const struct wally_tx_output *out = p->witness_utxo;
+		/* ANYONECANPAY does not commit to unrelated prevout metadata. */
+		if ((hash_type & 0x80) && i != input)
+			continue;
+		if (p->utxo) {
+			struct bitcoin_txid prev;
+			wally_txid(p->utxo, &prev);
+			if (memcmp(&prev, tx->wtx->inputs[i].txhash, sizeof(prev))
+			    || tx->wtx->inputs[i].index >= p->utxo->num_outputs)
+				goto done;
+			const struct wally_tx_output *full =
+				&p->utxo->outputs[tx->wtx->inputs[i].index];
+			if (out && (out->satoshi != full->satoshi
+				    || out->script_len != full->script_len
+				    || memcmp(out->script, full->script, out->script_len)))
+				goto done;
+			out = full;
+		}
+		if (!out)
+			goto done;
+		spent[i].amount = amount_sat(out->satoshi);
+		spent[i].script = tal_dup_arr(spent, u8, out->script, out->script_len, 0);
+	}
+	ok = bitcoin_unified_sighash(tx->wtx, input, hash_type, spent,
+				    tx->wtx->num_inputs, exec, digest);
+done:
+	tal_free(spent);
+	return ok;
 }

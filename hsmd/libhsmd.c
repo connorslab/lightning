@@ -1,6 +1,7 @@
 #include "config.h"
 #include <bitcoin/privkey.h>
 #include <bitcoin/script.h>
+#include <bitcoin/unified_sighash.h>
 #include <ccan/array_size/array_size.h>
 #include <ccan/crypto/hkdf_sha256/hkdf_sha256.h>
 #include <ccan/mem/mem.h>
@@ -550,6 +551,68 @@ static void hsm_key_for_utxo(struct privkey *privkey, struct pubkey *pubkey,
 	}
 }
 
+/* Explicit unified PSBT requests never fall back to libwally's legacy digest. */
+static bool sign_unified_wallet_input(struct wally_psbt *psbt, size_t i,
+				      const struct hsm_utxo *utxo,
+				      const struct privkey *key,
+				      const struct pubkey *pubkey)
+{
+	struct bitcoin_tx *tx = bitcoin_tx_with_psbt(tmpctx, psbt);
+	struct unified_sighash_input exec = { .script_type = 1 };
+	struct sha256_double digest;
+	struct bitcoin_signature sig;
+	u32 hash_type = psbt->inputs[i].sighash;
+	const u8 *spk = utxo->scriptPubkey;
+	bool taproot = is_p2tr(spk, tal_bytelen(spk), NULL);
+	if (hash_type != (SIGHASH_ALL | SIGHASH_UNIFIED)
+	    || is_elements(chainparams))
+		return false;
+	/* Authenticate the owned prevout against the wallet's UTXO record. */
+	if (!psbt->inputs[i].witness_utxo
+	    || psbt->inputs[i].witness_utxo->satoshi != utxo->amount.satoshis
+	    || psbt->inputs[i].witness_utxo->script_len != tal_bytelen(spk)
+	    || memcmp(psbt->inputs[i].witness_utxo->script, spk, tal_bytelen(spk)))
+		return false;
+	if (taproot) {
+		u8 *expected = scriptpubkey_p2tr(tmpctx, pubkey);
+		if (!memeq(expected, tal_bytelen(expected), spk, tal_bytelen(spk)))
+			return false;
+		exec.script_type = 2;
+	} else if (is_p2wsh(spk, tal_bytelen(spk), NULL)) {
+		exec.script_code = psbt_input_get_witscript(tmpctx, psbt, i);
+		if (!exec.script_code)
+			return false;
+		u8 *expected = scriptpubkey_p2wsh(tmpctx, exec.script_code);
+		if (!memeq(expected, tal_bytelen(expected), spk, tal_bytelen(spk)))
+			return false;
+	} else {
+		u8 *expected = scriptpubkey_p2wpkh(tmpctx, pubkey);
+		if (!memeq(expected, tal_bytelen(expected), spk, tal_bytelen(spk)))
+			return false;
+		exec.script_code = p2wpkh_scriptcode(tmpctx, pubkey);
+	}
+	if (!bitcoin_tx_unified_sighash(tx, i, hash_type, &exec, &digest.sha))
+		return false;
+	if (taproot) {
+		u8 tweaked[32], signature[65];
+		bool ok;
+		if (wally_ec_private_key_bip341_tweak(key->secret.data, 32,
+						    NULL, 0, 0, tweaked, 32) != WALLY_OK)
+			return false;
+		ok = wally_ec_sig_from_bytes(tweaked, 32, digest.sha.u.u8, 32,
+					    EC_FLAG_SCHNORR, signature, 64) == WALLY_OK;
+		sodium_memzero(tweaked, sizeof(tweaked));
+		if (!ok)
+			return false;
+		signature[64] = hash_type;
+		return wally_psbt_input_set_taproot_signature(&psbt->inputs[i],
+							     signature, sizeof(signature)) == WALLY_OK;
+	}
+	sig.sighash_type = hash_type;
+	sign_hash(key, &digest, &sig.s);
+	return psbt_input_set_signature(psbt, i, pubkey, &sig);
+}
+
 /* Find our inputs by the pubkey associated with the inputs, and
  * add a partial sig for each */
 static void sign_our_inputs(struct hsm_utxo **utxos, struct wally_psbt *psbt)
@@ -591,6 +654,13 @@ static void sign_our_inputs(struct hsm_utxo **utxos, struct wally_psbt *psbt)
 				psbt_input_set_wit_utxo(psbt, j,
 							scriptpubkey_p2wsh(psbt, wscript),
 							utxo->amount);
+			}
+			if (psbt->inputs[j].sighash & SIGHASH_UNIFIED) {
+				if (!sign_unified_wallet_input(psbt, j, utxo, &privkey, &pubkey))
+					hsmd_status_failed(STATUS_FAIL_MASTER_IO,
+						"Invalid or unsupported unified PSBT input %zu", j);
+				sodium_memzero(&privkey, sizeof(privkey));
+				continue;
 			}
 			tal_wally_start();
 			if (!is_cache_enabled) {

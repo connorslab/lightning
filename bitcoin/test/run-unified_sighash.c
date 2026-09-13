@@ -6,6 +6,7 @@
 #include "../varint.c"
 #include "../unified_sighash.c"
 #include <common/setup.h>
+#include <bitcoin/script.h>
 #include <assert.h>
 #include <stdio.h>
 /* Knots MIT-licensed vectors, PR357 head 54d757f269d21e784c771497e0a26b35ab7d0c5a.
@@ -43,9 +44,42 @@ static void check(const char *raw, const char *code, size_t in, u8 ht, u8 st,
  assert(!bitcoin_unified_sighash(tx->wtx, in, ht, spent, n-1, &exec, &actual));
  assert(!bitcoin_unified_sighash(tx->wtx, tx->wtx->num_inputs, ht, spent, n, &exec, &actual));
 }
+static void check_signing(void)
+{
+ struct privkey key = { .secret.data = { 1 } };
+ struct pubkey pub;
+ struct bitcoin_outpoint outpoint = { .n = 0 };
+ struct bitcoin_signature unified, legacy, decoded;
+ struct bitcoin_tx *tx = bitcoin_tx(tmpctx, chainparams, 1, 1, 0);
+ u8 der[73];
+ assert(pubkey_from_privkey(&key, &pub));
+ u8 *spk = scriptpubkey_p2wpkh(tmpctx, &pub);
+ u8 *code = p2wpkh_scriptcode(tmpctx, &pub);
+ bitcoin_tx_add_input(tx, &outpoint, 0xfffffffd, NULL,
+                      amount_sat(100000), spk, NULL);
+ bitcoin_tx_add_output(tx, spk, NULL, amount_sat(99000));
+ sign_tx_input(tx, 0, NULL, code, &key, &pub,
+               SIGHASH_ALL | SIGHASH_UNIFIED, &unified);
+ assert(check_tx_sig(tx, 0, NULL, code, &pub, &unified));
+ assert(signature_from_der(der, signature_to_der(der, &unified), &decoded));
+ assert(decoded.sighash_type == (SIGHASH_ALL | SIGHASH_UNIFIED));
+ assert(check_tx_sig(tx, 0, NULL, code, &pub, &decoded));
+ /* A legacy BIP143 verifier rejects this signature even with the same byte. */
+ struct sha256_double old_digest;
+ assert(wally_tx_get_btc_signature_hash(tx->wtx, 0, code, tal_bytelen(code),
+       100000, 0x21, WALLY_TX_FLAG_USE_WITNESS, old_digest.sha.u.u8, 32) == WALLY_OK);
+ assert(!check_signed_hash(&old_digest, &unified.s, &pub));
+ legacy = unified;
+ legacy.sighash_type = SIGHASH_ALL;
+ assert(!check_tx_sig(tx, 0, NULL, code, &pub, &legacy));
+ psbt_input_set_wit_utxo(tx->psbt, 0, spk, amount_sat(100001));
+ assert(!check_tx_sig(tx, 0, NULL, code, &pub, &unified));
+}
+
 int main(int argc, char *argv[]) {
  common_setup(argv[0]);
  chainparams = chainparams_for_network("regtest");
+ check_signing();
  check("2316de5a02a4fedc0d9e902f93a402329869afcf6b22c444f800297418b54d2e002c57eb6af3c4730b00569037965acac7bfd72758f60ddbe8ca7b1da23a70984f5e8b03bc44889190ea56034ec7bf259257003f9f66fc01cbbc461ea5ac04000254544e112901", "5353535353", 0, 163, 0, "4a84224afd272deeaa13972fb03ea70c738d78e50b53a63af3b3a9decfb548f5", 2, (u64[]){650374865900231ULL, 877685345816497ULL}, (const char *[]){"515151515151", "52525252525252"});
  check("74f713070329575216fe42fc7fb93e35ca2e52b3b12fee83f4d1aa8250be4445a6f912f33dd6b0974100a7b2d52e139daf3f073b5e3216427568954ad988564bcb34d053891a3ce8da53d815ada9fe8589a5003f14f14ff921522b5ecf9dbd392c2a386a620bfa03f0d6c6de57ac3e4a02e2bdd30d2b319e1d86cd0042937ea802affd6346928e0300035454540a1c474686220100065252525252525ec58fb5", "535353", 1, 161, 1, "0c049fe49dbe9a344f2ef8d3de920aa671e37a31919f106a6250c5635c7682e1", 3, (u64[]){217964177126525ULL, 1286402448270793ULL, 875002681445907ULL}, (const char *[]){"54545454545454", "53535353535353", "545454545454"});
  check("db27e51d021b2927dff1c4fa374ca66a750aa549f3a08db178978f57c663804273fc8dea29eb27f022008f680f8436a4c31084e27b4f296e24a932bb4121282c6962afc572f093d0c038a74ee843e462a72c0092a5b34701519c44e959aa040001561092b372", "515151", 0, 162, 1, "5ff71c408c490803bd6d0d5578685b565a3fb36a2adebadbea680ecf5ecdfd98", 2, (u64[]){1105898160581225ULL, 734602758275010ULL}, (const char *[]){"52525252", "5252525252525252"});

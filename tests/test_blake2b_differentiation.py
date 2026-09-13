@@ -5,15 +5,17 @@ import pytest
 
 
 @pytest.mark.parametrize('incoming', [False, True])
-def test_blake2b_required_peer_bit(node_factory, incoming):
+@pytest.mark.parametrize('peer_features', ['-68', '69////////'])
+def test_blake2b_required_peer_bit(node_factory, incoming, peer_features):
     blake, legacy = node_factory.get_nodes(2, opts=[
         {'may_reconnect': True, 'allow_warning': True},
-        {'dev-force-features': '-68', 'may_reconnect': True, 'allow_warning': True}])
+        {'dev-force-features': peer_features, 'may_reconnect': True, 'allow_warning': True}])
     source, target = (legacy, blake) if incoming else (blake, legacy)
     with pytest.raises(RpcError):
         source.rpc.connect(target.info['id'], 'localhost', target.port)
     assert not any(p['connected'] for p in blake.rpc.listpeers()['peers'])
-    for source, reader in [(blake, legacy), (legacy, blake)]:
+    # Invoice compatibility is checked with otherwise normal legacy features.
+    for source, reader in ([] if peer_features != '-68' else [(blake, legacy), (legacy, blake)]):
         invoice = source.rpc.invoice(1000, 'compat', 'invoice compatibility')['bolt11']
         assert reader.rpc.decode(invoice)['valid']
 

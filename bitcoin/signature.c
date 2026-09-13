@@ -170,6 +170,11 @@ void bitcoin_tx_require_unified(struct bitcoin_tx *tx, size_t input,
 	size_t elements;
 	if (wally_psbt_is_elements(tx->psbt, &elements) != WALLY_OK || elements
 	    || input >= tx->psbt->num_inputs
+	    /* A finalized input omits its sighash field during serialization.
+	     * Re-signing must reopen it before sending the policy to the HSM.
+	     * The transaction's existing witness is retained in tx->wtx. */
+	    || wally_psbt_input_set_final_witness(&tx->psbt->inputs[input], NULL) != WALLY_OK
+	    || wally_psbt_input_set_final_scriptsig(&tx->psbt->inputs[input], NULL, 0) != WALLY_OK
 	    || wally_psbt_input_set_sighash(&tx->psbt->inputs[input],
 					base | SIGHASH_UNIFIED) != WALLY_OK)
 		errx(1, "Cannot set unified signing policy on transaction");

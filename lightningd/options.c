@@ -1831,6 +1831,8 @@ void handle_early_opts(struct lightningd *ld, int argc, char *argv[])
 		feature_set_sub(ld->our_features,
 			take(feature_set_for_feature(NULL, OPT_BLAKE2B)));
 		feature_set_sub(ld->our_features,
+			take(feature_set_for_feature(NULL, OPT_UNIFIED_SIGS)));
+		feature_set_sub(ld->our_features,
 				feature_set_for_feature(tmpctx,
 							OPTIONAL_FEATURE(OPT_ANCHORS_ZERO_FEE_HTLC_TX)));
 	}

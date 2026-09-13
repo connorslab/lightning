@@ -139,6 +139,8 @@ struct bitcoin_tx *initial_channel_tx(const tal_t *ctx,
 				    err_reason);
 
 	if (init_tx) {
+		if (channel_has(channel, OPT_UNIFIED_SIGS))
+			bitcoin_tx_require_unified(init_tx, 0, SIGHASH_ALL);
 		psbt_input_add_pubkey(init_tx->psbt, 0,
 				      &channel->funding_pubkey[side], false /* is_taproot */);
 		psbt_input_add_pubkey(init_tx->psbt, 0,

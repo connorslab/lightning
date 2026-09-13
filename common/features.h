@@ -159,5 +159,7 @@ struct feature_set *feature_set_dup(const tal_t *ctx,
 
 /* Experimental proposal, not a registered BOLT allocation. */
 #define OPT_BLAKE2B 68
+/* Provisional signing capability; persisted as a channel type modifier. */
+#define OPT_UNIFIED_SIGS 70
 
 #endif /* LIGHTNING_COMMON_FEATURES_H */

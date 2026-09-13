@@ -78,6 +78,12 @@ bool channel_type_has(const struct channel_type *type, int feature)
 	return feature_offered(type->features, feature);
 }
 
+enum sighash_type channel_type_sighash(const struct channel_type *type,
+				      enum sighash_type base)
+{
+	return base | (channel_type_has(type, OPT_UNIFIED_SIGS) ? SIGHASH_UNIFIED : 0);
+}
+
 bool channel_type_has_anchors(const struct channel_type *type)
 {
 	return feature_offered(type->features, OPT_ANCHOR_OUTPUTS_DEPRECATED)
@@ -113,8 +119,13 @@ struct channel_type *channel_type_accept(const tal_t *ctx,
 	struct channel_type *ctype, proposed;
 	/* Need to copy since we're going to blank variant bits for equality. */
 	proposed.features = tal_dup_talarr(tmpctx, u8, t);
+	/* Peer connectivity stays compatible; NEW channels require the signer. */
+	if (feature_offered(our_features->bits[INIT_FEATURE], OPT_UNIFIED_SIGS)
+	    && !feature_is_set(t, OPT_UNIFIED_SIGS))
+		return NULL;
 
 	static const size_t feats[] = {
+		OPT_UNIFIED_SIGS,
 		OPT_ANCHORS_ZERO_FEE_HTLC_TX,
 		OPT_STATIC_REMOTEKEY,
 		OPT_SCID_ALIAS,
@@ -127,6 +138,7 @@ struct channel_type *channel_type_accept(const tal_t *ctx,
 	 *   - `option_zeroconf` (bit 50)
 	 */
 	static const size_t variants[] = {
+		OPT_UNIFIED_SIGS,
 		OPT_SCID_ALIAS,
 		OPT_ZEROCONF,
 	};

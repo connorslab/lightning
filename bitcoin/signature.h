@@ -65,6 +65,9 @@ void bitcoin_tx_hash_for_sig(const struct bitcoin_tx *tx, unsigned int in,
 			     enum sighash_type sighash_type,
 			     struct sha256_double *dest);
 
+void bitcoin_tx_require_unified(struct bitcoin_tx *tx, size_t input,
+			       enum sighash_type base);
+
 /**
  * sign_hash - produce a raw secp256k1 signature (with low R value).
  * @p: secret key

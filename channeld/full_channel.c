@@ -409,6 +409,12 @@ struct bitcoin_tx **channel_txs(const tal_t *ctx,
 
 	add_htlcs(&txs, *htlcmap, channel, &keyset, side);
 
+	if (channel_has(channel, OPT_UNIFIED_SIGS)) {
+		for (size_t i = 0; i < tal_count(txs); i++)
+			bitcoin_tx_require_unified(txs[i], 0,
+				i && channel_has_anchors(channel)
+				? SIGHASH_SINGLE | SIGHASH_ANYONECANPAY : SIGHASH_ALL);
+	}
 	tal_free(committed);
 	return txs;
 }

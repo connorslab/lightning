@@ -701,7 +701,7 @@ static bool funder_finalize_channel_setup(struct state *state,
 	if (!msg)
 		goto fail;
 
-	sig->sighash_type = SIGHASH_ALL;
+	sig->sighash_type = channel_type_sighash(state->channel_type, SIGHASH_ALL);
 	if (!fromwire_funding_signed(msg, &id_in, &sig->s))
 		peer_failed_err(state->pps, &state->channel_id,
 				"Parsing funding_signed: %s", tal_hex(msg, msg));
@@ -1120,7 +1120,7 @@ static u8 *fundee_channel(struct state *state, const u8 *open_channel_msg)
 
 	/* The message should be "funding_created" which tells us what funding
 	 * tx they generated; the sighash type is implied, so we set it here. */
-	theirsig.sighash_type = SIGHASH_ALL;
+	theirsig.sighash_type = channel_type_sighash(state->channel_type, SIGHASH_ALL);
 	if (!fromwire_funding_created(msg, &id_in,
 				      &state->funding.txid,
 				      &funding_txout,
@@ -1284,7 +1284,7 @@ static u8 *fundee_channel(struct state *state, const u8 *open_channel_msg)
 
 	/* We don't send this ourselves: channeld does, because master needs
 	 * to save state to disk before doing so. */
-	assert(sig.sighash_type == SIGHASH_ALL);
+	assert(sig.sighash_type == channel_type_sighash(state->channel_type, SIGHASH_ALL));
 	msg = towire_funding_signed(state, &state->channel_id, &sig.s);
 
 	if (direct_outputs[LOCAL] != NULL)

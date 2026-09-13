@@ -1193,7 +1193,7 @@ static u8 *msg_for_remote_commit(const tal_t *ctx,
 				&state->our_funding_pubkey));
 
 
-	assert(local_sig.sighash_type == SIGHASH_ALL);
+	assert(local_sig.sighash_type == channel_type_sighash(state->channel_type, SIGHASH_ALL));
 
 	if (pbase && direct_outputs[LOCAL])
 		*pbase = penalty_base_new(ctx, 0, remote_commit,
@@ -1253,7 +1253,7 @@ static char *do_commit_signed_received(const tal_t *ctx,
 		open_err_fatal(state, "Parsing commitment signed %s",
 			       tal_hex(tmpctx, msg));
 
-	remote_sig->sighash_type = SIGHASH_ALL;
+	remote_sig->sighash_type = channel_type_sighash(state->channel_type, SIGHASH_ALL);
 	check_channel_id(state, &cid, &state->channel_id);
 
 	if (htlc_sigs != NULL)

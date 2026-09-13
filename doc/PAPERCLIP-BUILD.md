@@ -6,8 +6,11 @@ Scope: a low-number Blake2b peer feature and unified transaction signing.
 This branch is under development; transaction/channel integration is not yet
 complete. Do not deploy it on funded nodes or claim complete replay protection.
 
-The peer feature uses provisional 68/69 (advertised optional bit 69). Invoices
+The peer feature uses provisional 68/69 (advertised required bit 68). Invoices
 and genesis are unchanged. See PROPOSAL.md and UNIFIED-PROPOSAL.md for status.
 
 Upstream .3 uses database schema 284; .2 used 282. Any database upgrade requires
 separate planning and complete backups. No deployment is performed by this build.
+
+Required bit 68 is an explicit operator-requested departure from cguida's
+optional migration signaling. Older peers cannot connect without upgrading.

@@ -14,10 +14,10 @@ int main(int argc, char *argv[])
 	blake = feature_set_for_feature(tmpctx, OPT_BLAKE2B);
 	legacy = feature_set_for_feature(tmpctx, OPT_STATIC_REMOTEKEY);
 	empty = tal_arr(tmpctx, u8, 0);
-	assert(feature_is_set(blake->bits[INIT_FEATURE], OPT_BLAKE2B + 1));
-	assert(!feature_is_set(blake->bits[INIT_FEATURE], OPT_BLAKE2B));
-	assert(feature_is_set(blake->bits[NODE_ANNOUNCE_FEATURE], OPT_BLAKE2B + 1));
-	assert(features_unsupported(legacy, blake->bits[INIT_FEATURE], INIT_FEATURE) == -1);
+	assert(feature_is_set(blake->bits[INIT_FEATURE], OPT_BLAKE2B));
+	assert(!feature_is_set(blake->bits[INIT_FEATURE], OPT_BLAKE2B + 1));
+	assert(feature_is_set(blake->bits[NODE_ANNOUNCE_FEATURE], OPT_BLAKE2B));
+	assert(features_unsupported(legacy, blake->bits[INIT_FEATURE], INIT_FEATURE) == OPT_BLAKE2B);
 	assert(features_unsupported(blake, empty, INIT_FEATURE) == -1);
 	for (size_t i = BOLT11_FEATURE; i <= BOLT12_INVOICE_FEATURE; i++)
 		assert(tal_bytelen(blake->bits[i]) == 0);
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	tlvs = tlv_init_tlvs_new(tmpctx);
 	msg = towire_init(tmpctx, empty, blake->bits[INIT_FEATURE], tlvs);
 	assert(fromwire_init(tmpctx, msg, &global, &features, &decoded));
-	assert(feature_is_set(features, OPT_BLAKE2B + 1));
+	assert(feature_is_set(features, OPT_BLAKE2B));
 	common_shutdown();
 	return 0;
 }

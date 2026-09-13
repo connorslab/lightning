@@ -1106,7 +1106,8 @@ static struct bitcoin_signature *calc_commitsigs(const tal_t *ctx,
 							  txs[i+1]->wtx->inputs[0].index);
 		msg = towire_hsmd_sign_remote_htlc_tx(NULL, txs[i + 1], wscript,
 						      remote_per_commit,
-						      channel_has_anchors(peer->channel));
+						      channel_has_anchors(peer->channel),
+			       channel_has(peer->channel, OPT_UNIFIED_SIGS));
 
 		msg = hsm_req(tmpctx, take(msg));
 		if (!fromwire_hsmd_sign_tx_reply(msg, &htlc_sigs[i]))
@@ -1141,7 +1142,7 @@ static secp256k1_ecdsa_signature *raw_sigs(const tal_t *ctx,
 
 static struct bitcoin_signature *unraw_sigs(const tal_t *ctx,
 					    const secp256k1_ecdsa_signature *raw,
-					    bool option_anchor_outputs)
+					    bool option_anchor_outputs, bool unified)
 {
 	struct bitcoin_signature *sigs;
 
@@ -1160,6 +1161,8 @@ static struct bitcoin_signature *unraw_sigs(const tal_t *ctx,
 			sigs[i].sighash_type = SIGHASH_SINGLE|SIGHASH_ANYONECANPAY;
 		else
 			sigs[i].sighash_type = SIGHASH_ALL;
+		if (unified)
+			sigs[i].sighash_type |= SIGHASH_UNIFIED;
 	}
 	return sigs;
 }
@@ -2168,7 +2171,7 @@ static struct commitsig_info *handle_peer_commit_sig(struct peer *peer,
 	}
 
 	/* SIGHASH_ALL is implied. */
-	commit_sig.sighash_type = SIGHASH_ALL;
+	commit_sig.sighash_type = channel_type_sighash(peer->channel->type, SIGHASH_ALL);
 	htlc_sigs = unraw_sigs(tmpctx, raw_sigs,
 			       channel_has_anchors(peer->channel));
 

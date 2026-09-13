@@ -3,6 +3,7 @@
 #define LIGHTNING_COMMON_CHANNEL_TYPE_H
 #include "config.h"
 #include <common/features.h>
+#include <bitcoin/signature.h>
 #include <wire/channel_type_wiregen.h>
 
 /* Explicit channel types */
@@ -23,6 +24,9 @@ struct channel_type *channel_type_from(const tal_t *ctx,
 
 /* Does this type include this feature? */
 bool channel_type_has(const struct channel_type *type, int feature);
+
+enum sighash_type channel_type_sighash(const struct channel_type *type,
+				      enum sighash_type base);
 
 /* Convenience for querying either anchor_outputs or anchors_zero_fee_htlc_tx */
 bool channel_type_has_anchors(const struct channel_type *type);

@@ -162,6 +162,15 @@ void bitcoin_tx_hash_for_sig(const struct bitcoin_tx *tx, unsigned int in,
 	tal_wally_end(tx->wtx);
 }
 
+void bitcoin_tx_require_unified(struct bitcoin_tx *tx, size_t input,
+			       enum sighash_type base)
+{
+	if (is_elements(tx->chainparams) || input >= tx->psbt->num_inputs
+	    || wally_psbt_input_set_sighash(&tx->psbt->inputs[input],
+					base | SIGHASH_UNIFIED) != WALLY_OK)
+		fatal("Cannot set unified signing policy on transaction");
+}
+
 void sign_tx_input(const struct bitcoin_tx *tx,
 		   unsigned int in,
 		   const u8 *subscript,
@@ -173,6 +182,8 @@ void sign_tx_input(const struct bitcoin_tx *tx,
 	struct sha256_double hash;
 	bool use_segwit = witness_script != NULL;
 	const u8 *script = use_segwit ? witness_script : subscript;
+	if (tx->psbt->inputs[in].sighash & SIGHASH_UNIFIED)
+		sighash_type |= SIGHASH_UNIFIED;
 
 	assert(sighash_type_valid(sighash_type));
 
@@ -213,6 +224,11 @@ bool check_tx_sig(const struct bitcoin_tx *tx, size_t input_num,
 	bool use_segwit = witness_script != NULL;
 	const u8 *script = use_segwit ? witness_script : redeemscript;
 	bool ret;
+	if (input_num >= tx->psbt->num_inputs)
+		return false;
+	if ((tx->psbt->inputs[input_num].sighash & SIGHASH_UNIFIED)
+	    && !(sig->sighash_type & SIGHASH_UNIFIED))
+		return false;
 
 	/* We only support a limited subset of sighash types. */
 	if (!sighash_type_valid(sig->sighash_type))

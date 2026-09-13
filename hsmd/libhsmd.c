@@ -655,6 +655,13 @@ static void sign_our_inputs(struct hsm_utxo **utxos, struct wally_psbt *psbt)
 							scriptpubkey_p2wsh(psbt, wscript),
 							utxo->amount);
 			}
+			/* New wallet/funding signatures use unified sighash by default. */
+			if (!is_elements(chainparams) && !psbt->inputs[j].sighash)
+				if (wally_psbt_input_set_sighash(&psbt->inputs[j],
+					SIGHASH_ALL | SIGHASH_UNIFIED) != WALLY_OK)
+					hsmd_status_failed(STATUS_FAIL_MASTER_IO, "Cannot set unified wallet sighash");
+			if (!is_elements(chainparams) && psbt->inputs[j].sighash != (SIGHASH_ALL | SIGHASH_UNIFIED))
+				hsmd_status_failed(STATUS_FAIL_MASTER_IO, "Wallet signing requires unified sighash");
 			if (psbt->inputs[j].sighash & SIGHASH_UNIFIED) {
 				if (!sign_unified_wallet_input(psbt, j, utxo, &privkey, &pubkey))
 					hsmd_status_failed(STATUS_FAIL_MASTER_IO,

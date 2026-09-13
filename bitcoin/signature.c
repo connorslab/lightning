@@ -7,6 +7,8 @@
 #include <bitcoin/tx.h>
 #include <bitcoin/unified_sighash.h>
 #include <ccan/mem/mem.h>
+#include <ccan/err/err.h>
+#include <wally_psbt.h>
 #include <common/utils.h>
 #include <secp256k1_schnorrsig.h>
 #include <wire/wire.h>
@@ -136,7 +138,7 @@ void bitcoin_tx_hash_for_sig(const struct bitcoin_tx *tx, unsigned int in,
 		/* This API is the segwit-v0 channel signing path. Taproot wallet
 		 * signing supplies its own script context to the unified API. */
 		if (!bitcoin_tx_unified_sighash(tx, in, sighash_type, &exec, &dest->sha))
-			fatal("Cannot compute unified sighash: missing or invalid prevout data");
+			errx(1, "Cannot compute unified sighash: missing or invalid prevout data");
 		return;
 	}
 
@@ -168,7 +170,7 @@ void bitcoin_tx_require_unified(struct bitcoin_tx *tx, size_t input,
 	if (is_elements(tx->chainparams) || input >= tx->psbt->num_inputs
 	    || wally_psbt_input_set_sighash(&tx->psbt->inputs[input],
 					base | SIGHASH_UNIFIED) != WALLY_OK)
-		fatal("Cannot set unified signing policy on transaction");
+		errx(1, "Cannot set unified signing policy on transaction");
 }
 
 void sign_tx_input(const struct bitcoin_tx *tx,

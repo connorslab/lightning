@@ -44,6 +44,17 @@ jobs:
         run: |
           .github/scripts/install-bitcoind.sh
           uv run pytest -q tests/test_blake2b_differentiation.py --timeout=120 --maxfail=1
+      - name: Knots unified transaction integration
+        run: |
+          mkdir -p /tmp/paperclip-knots
+          curl -fL https://github.com/bitcoinknots/bitcoin/releases/download/v29.4.1.knots20260508/bitcoin-29.4.1.knots20260508-x86_64-linux-gnu.tar.gz -o /tmp/paperclip-knots/node.tar.gz
+          echo '0d0b435ae67dd38d150c048a388be821ad0ca8b46d6dcace5c34d4ba2977801b  /tmp/paperclip-knots/node.tar.gz' | sha256sum -c -
+          tar -xf /tmp/paperclip-knots/node.tar.gz -C /tmp/paperclip-knots
+          sudo cp /tmp/paperclip-knots/bitcoin-29.4.1.knots20260508/bin/bitcoin-cli /usr/local/bin/bitcoin-cli
+          printf '%s\n' '#!/bin/sh' 'exec /tmp/paperclip-knots/bitcoin-29.4.1.knots20260508/bin/bitcoind -testactivationheight=blake2b@1 "$@"' > /tmp/paperclip-knots/bitcoind
+          chmod +x /tmp/paperclip-knots/bitcoind
+          sudo cp /tmp/paperclip-knots/bitcoind /usr/local/bin/bitcoind
+          uv run pytest -q tests/test_unified_transactions.py --timeout=120 --maxfail=1
       - name: Package
         run: |
           mkdir dist

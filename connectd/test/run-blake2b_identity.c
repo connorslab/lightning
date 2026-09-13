@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <common/features.h>
 #include <common/setup.h>
+#include <common/utils.h>
 #include <wire/peer_wire.h>
 
 int main(int argc, char *argv[])

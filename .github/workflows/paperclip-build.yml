@@ -1,7 +1,7 @@
 name: Paperclip differentiation proposal
 on:
   push:
-    branches: [paperclip/blake2b-differentiation]
+    branches: [paperclip/blake2b-differentiation-v3]
   workflow_dispatch:
 permissions:
   contents: read

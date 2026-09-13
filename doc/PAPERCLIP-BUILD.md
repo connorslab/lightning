@@ -1,7 +1,7 @@
 # Paperclip Blake2b differentiation proposal
 
 This is an experimental Ubuntu 24.04 amd64 build based on
-v26.06.7-blake2b.2. It adds actual feature signaling, payment-document checks
+v26.06.7-blake2b.3. It adds actual feature signaling, payment-document checks
 and a configurable local peer-admission policy. It is not a full migration
 implementation or a registered protocol release. Do not install over funded
 nodes until partner coordination and channel-recovery tests are complete.
@@ -34,3 +34,9 @@ peers, not adversaries claiming false capabilities.
 SHA256SUMS verifies archive integrity; it is not a publisher signature.
 SOURCE-COMMIT identifies the exact source. Runtime OS dependencies must be
 installed separately. This development build uses the Rust small profile.
+
+Upstream .3 corrects the .2 base from CLN 26.06.6 to 26.06.7, including its
+fixes and database schema 284 (previously 282). An existing 282 database needs
+an irreversible upgrade, which this development version may require explicitly
+authorizing with --database-upgrade=true. Back up the full node state first;
+afterward .2 cannot open that database. This build does not deploy or migrate it.

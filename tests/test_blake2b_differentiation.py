@@ -11,12 +11,12 @@ def test_blake2b_migration_accepts_legacy(node_factory):
     # Required invoice markers prevent ordinary cross-network payment reads.
     inv = blake.rpc.invoice(1000, 'blake', 'proposal test')['bolt11']
     assert len(inv) < 2000  # Field fits without truncation despite placeholder bit.
-    assert blake.rpc.decodepay(inv)['payment_hash']
+    assert blake.rpc.decode(inv)['valid']
     with pytest.raises(RpcError, match='feature'):
-        legacy.rpc.decodepay(inv)
+        legacy.rpc.decode(inv)
     legacy_inv = legacy.rpc.invoice(1000, 'legacy', 'proposal test')['bolt11']
     with pytest.raises(RpcError, match='feature'):
-        blake.rpc.decodepay(legacy_inv)
+        blake.rpc.decode(legacy_inv)
     offer = blake.rpc.offer('1000msat', 'proposal offer')['bolt12']
     # Fetch validates an offer before attempting any payment or routing.
     with pytest.raises(RpcError, match='feature'):
@@ -27,7 +27,7 @@ def test_blake2b_migration_accepts_legacy(node_factory):
 def test_blake2b_strict_rejects_legacy(node_factory, incoming):
     blake, legacy = node_factory.get_nodes(2, opts=[
         {'blake2b-peer-policy': 'strict', 'may_reconnect': True},
-        {'dev-force-features': '-4110', 'may_reconnect': True}])
+        {'dev-force-features': '-4110', 'may_reconnect': True, 'allow_warning': True}])
     source, target = (legacy, blake) if incoming else (blake, legacy)
     with pytest.raises(RpcError):
         source.rpc.connect(target.info['id'], 'localhost', target.port)

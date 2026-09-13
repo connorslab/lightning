@@ -15,7 +15,8 @@ until all signing, verification, persistence and recovery gates below pass.
 - Consensus reference: Bitcoin Knots PR 357, source commit
   `54d757f269d21e784c771497e0a26b35ab7d0c5a`,
   `doc/unified-sighash.md` and `src/test/data/unified_sighash.json`.
-  Pin and compare with the deployment's final Knots tag before activation.
+  Compared identical to final tag v29.4.1.knots20260508, commit
+  `8c85b1585dac23f964e2dd32045624de7f02aa58`.
 
 ## Two different capabilities
 
@@ -146,8 +147,8 @@ Implemented in this branch:
 - Blake2b signaling, marked payment readers/writers and configurable peering.
 - Standalone compiled `bitcoin_unified_sighash` foundation with explicit spent
   outputs and script context; no channel/HSM caller is switched to it yet.
-- The 166 Knots digest vectors for script types 0/1 and basic rejection tests.
-  Taproot/annex/code-separator extensions need independent vectors; digest
+- The 166 Knots digest vectors for all four script types and basic rejection tests.
+  Annex/code-separator extensions need additional vectors; digest
   tests are not channel enforceability tests.
 
 Not implemented or advertised:

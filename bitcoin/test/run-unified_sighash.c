@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <stdio.h>
 /* Knots MIT-licensed vectors, PR357 head 54d757f269d21e784c771497e0a26b35ab7d0c5a.
- * Generated from src/test/data/unified_sighash.json (166 cases, script types 0/1).
+ * Generated from src/test/data/unified_sighash.json (166 cases, all four script types).
  * Original copyright: Bitcoin Knots developers. */
 static void check(const char *raw, const char *code, size_t in, u8 ht, u8 st,
                   const char *expected, size_t n, const u64 *amounts,
@@ -19,16 +19,25 @@ static void check(const char *raw, const char *code, size_t in, u8 ht, u8 st,
  struct bitcoin_tx_output *spent = tal_arr(tmpctx, struct bitcoin_tx_output, n);
  struct unified_sighash_input exec = { .script_type = st };
  struct sha256 actual;
- struct bitcoin_txid want;
+ struct sha256 want, leaf;
+ struct sha256_ctx leaf_ctx;
  assert(tx);
  exec.script_code = tal_hexdata(tmpctx, code, strlen(code));
  for (size_t i = 0; i < n; i++) {
   spent[i].amount = amount_sat(amounts[i]);
   spent[i].script = tal_hexdata(tmpctx, scripts[i], strlen(scripts[i]));
  }
+ if (st == 3) {
+  bip340_sighash_init(&leaf_ctx, "TapLeaf", "", "");
+  sha256_u8(&leaf_ctx, 0xc0);
+  unified_script(&leaf_ctx, exec.script_code, tal_bytelen(exec.script_code));
+  sha256_done(&leaf_ctx, &leaf);
+  exec.tapleaf = &leaf;
+  exec.codeseparator = 0xffffffff;
+ }
  assert(bitcoin_unified_sighash(tx->wtx, in, ht, spent, n, &exec, &actual));
- assert(bitcoin_txid_from_hex(expected, strlen(expected), &want));
- assert(memcmp(&actual, &want.shad.sha, sizeof(actual)) == 0);
+ assert(hex_decode(expected, strlen(expected), &want, sizeof(want)));
+ assert(memcmp(&actual, &want, sizeof(actual)) == 0);
  /* Missing opt-in, wrong metadata cardinality and out-of-range indices fail. */
  assert(!bitcoin_unified_sighash(tx->wtx, in, ht & ~0x20, spent, n, &exec, &actual));
  assert(!bitcoin_unified_sighash(tx->wtx, in, ht, spent, n-1, &exec, &actual));

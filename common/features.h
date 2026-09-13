@@ -157,4 +157,9 @@ struct feature_set *feature_set_dup(const tal_t *ctx,
 
 #define OPT_SHUTDOWN_WRONG_FUNDING		104
 
+/* PROPOSAL ONLY: the rescue plan's temporary pair, NOT a registry allocation.
+ * BOLT11's 10-bit field length prevents using a bit >= 5115 there. Resolve
+ * that conflict with the plan's >=32768 allocation before standardization. */
+#define OPT_BLAKE2B 4110
+
 #endif /* LIGHTNING_COMMON_FEATURES_H */

@@ -104,6 +104,19 @@ static struct io_plan *peer_init_received(struct io_conn *conn,
 		}
 	}
 
+	/* Local opt-in policy, deliberately not an even init feature: the
+	 * migration protocol must remain connectable by legacy recovery peers.
+	 * This declaration is not proof of backend consensus or unified signing. */
+	if (peer->daemon->blake2b_strict_peers
+	    && (!feature_offered(features, OPT_BLAKE2B)
+		|| !tlvs->networks || !contains_common_chain(tlvs->networks))) {
+		status_peer_debug(&peer->id, "Blake2b strict peer policy rejected init");
+		msg = towire_warningfmt(NULL, NULL,
+				       "Blake2b strict peer policy requires option_blake2b and matching networks");
+		msg = cryptomsg_encrypt_msg(NULL, &peer->cs, take(msg));
+		return io_write(conn, msg, tal_count(msg), io_close_cb, NULL);
+	}
+
 	/* fetch optional tlv `remote_addr` */
 	remote_addr = NULL;
 

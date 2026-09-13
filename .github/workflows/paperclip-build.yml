@@ -18,10 +18,6 @@ jobs:
           fetch-depth: 0
           submodules: recursive
       - uses: astral-sh/setup-uv@v6
-      - uses: actions/cache/restore@v4
-        with:
-          path: target
-          key: rust-small-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
       - name: Dependencies
         run: sudo apt-get update && sudo apt-get install -y autoconf automake build-essential libtool libsqlite3-dev libffi-dev zlib1g-dev libsodium-dev gettext lowdown libgmp-dev libpq-dev protobuf-compiler libssl-dev
       - name: Build and stage
@@ -35,14 +31,10 @@ jobs:
           stage/usr/bin/lightningd --version
           stage/usr/bin/lightning-cli --version
           test -x stage/usr/libexec/c-lightning/plugins/clnrest
-      - uses: actions/cache/save@v4
-        with:
-          path: target
-          key: rust-small-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
       - name: Isolated regtest integration
         run: |
           .github/scripts/install-bitcoind.sh
-          uv run pytest -q tests/test_blake2b_differentiation.py --timeout=120 --maxfail=1
+          uv run pytest -q tests/test_blake2b_differentiation.py --timeout=120
       - name: Package
         run: |
           mkdir dist

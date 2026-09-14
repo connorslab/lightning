@@ -938,7 +938,8 @@ size_t bitcoin_tx_input_witness_weight(enum utxotype utxotype)
 		/* In practice, these predate anchors, so: */
 		return 1 + 1 + bitcoin_tx_input_sig_weight();
 	case UTXO_P2TR:
-		return 1 + 64;
+		/* Unified Schnorr signatures include an explicit sighash byte. */
+		return 1 + 64 + !is_elements(chainparams);
 	}
 	abort();
 }

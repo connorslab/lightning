@@ -12,6 +12,7 @@
 #include <common/cryptomsg.h>
 #include <common/features.h>
 #include <common/ping.h>
+#include <common/utils.h>
 #include <inttypes.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -191,6 +192,8 @@ static struct io_plan *handshake_success(struct io_conn *conn,
 
 	set_feature_bit(&features,
 			OPTIONAL_FEATURE(OPT_GOSSIP_QUERIES));
+	if (!is_elements(chainparams))
+		set_feature_bit(&features, OPT_BLAKE2B);
 
 	if (!no_init) {
 		u8 *msg;

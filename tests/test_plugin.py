@@ -755,6 +755,8 @@ def test_openchannel_hook(node_factory, bitcoind):
     else:
         feerate = 7500
         expected['channel_type'] = r"{'bits': \[12\], 'names': \['static_remotekey/even'\]}"
+    if TEST_NETWORK == 'regtest':
+        expected['channel_type'] = expected['channel_type'].replace(r'\],', r', 70\],').replace(r"\]}", r", 'unified_sigs/even'\]}")
     if l2.config('experimental-dual-fund'):
         # openchannel2 var checks
         expected.update({
@@ -4996,10 +4998,10 @@ def test_openchannel_hook_channel_type(node_factory, bitcoind):
     opts = {'plugin': os.path.join(os.getcwd(), 'tests/plugins/openchannel_hook_accepter.py')}
     l1, l2 = node_factory.line_graph(2, opts=opts)
 
-    if 'anchors/even' in only_one(l1.rpc.listpeerchannels()['channels'])['channel_type']['names']:
-        l2.daemon.wait_for_log(r"plugin-openchannel_hook_accepter.py: accept by design: channel_type {'bits': \[12, 22\], 'names': \['static_remotekey/even', 'anchors/even'\]}")
-    else:
-        l2.daemon.wait_for_log(r"plugin-openchannel_hook_accepter.py: accept by design: channel_type {'bits': \[12\], 'names': \['static_remotekey/even'\]}")
+    bits = [12, 22, 70] if TEST_NETWORK == 'regtest' else [12]
+    names = ['static_remotekey/even', 'anchors/even', 'unified_sigs/even'] if TEST_NETWORK == 'regtest' else ['static_remotekey/even']
+    expected = {'bits': bits, 'names': names}
+    l2.daemon.wait_for_log(re.escape(f"accept by design: channel_type {expected}"))
 
 
 def reverse_bitcoin_hash(hash_hex):

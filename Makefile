@@ -664,7 +664,8 @@ update-doc-examples:
 check-doc-examples: update-doc-examples
 	git diff --exit-code HEAD
 
-check-wire-format: extract-bolt-csv
+# The whole-tree diff must not race protobuf generation/import normalization.
+check-wire-format: extract-bolt-csv $(GRPC_GEN)
 	git diff --exit-code HEAD
 
 # This should NOT compile things!

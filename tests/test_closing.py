@@ -3823,6 +3823,12 @@ def test_segwit_anyshutdown(node_factory, bitcoind, executor):
         bitcoind.generate_block(1, wait_for_mempool=1)
         wait_for(lambda: any([c['state'] == 'CHANNELD_NORMAL' for c in l1.rpc.listpeerchannels()['channels']]))
         l1.pay(l2, 10**9 // 2)
+        if len(addr) > 80:
+            # Blake2b limits non-OP_RETURN output scripts to 34 bytes.
+            # Refusal must leave the channel available for a valid close.
+            with pytest.raises(RpcError, match='Invalid'):
+                l1.rpc.close(l2.info['id'], destination=addr)
+            addr = 'bcrt1zw508d6qejxtdg4y5r3zarvaryv2wuatf'
         l1.rpc.close(l2.info['id'], destination=addr)
         bitcoind.generate_block(1, wait_for_mempool=1)
         wait_for(lambda: all([c['state'] == 'ONCHAIN' for c in l1.rpc.listpeerchannels()['channels']]))
@@ -3837,7 +3843,7 @@ def test_anysegwit_close_needs_feature(node_factory, bitcoind):
                                                'dev-force-features': -27}])
 
     with pytest.raises(RpcError, match=r'Peer does not allow v1\+ shutdown addresses'):
-        l1.rpc.close(l2.info['id'], destination='bcrt1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k0ylj56')
+        l1.rpc.close(l2.info['id'], destination='bcrt1zw508d6qejxtdg4y5r3zarvaryv2wuatf')
 
     # From TFM: "Tell your friends to upgrade!"
     l2.stop()
@@ -3846,7 +3852,7 @@ def test_anysegwit_close_needs_feature(node_factory, bitcoind):
 
     # Now it will work!
     l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
-    l1.rpc.close(l2.info['id'], destination='bcrt1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k0ylj56')
+    l1.rpc.close(l2.info['id'], destination='bcrt1zw508d6qejxtdg4y5r3zarvaryv2wuatf')
     wait_for(lambda: only_one(l1.rpc.listpeerchannels()['channels'])['state'] == 'CLOSINGD_COMPLETE')
     bitcoind.generate_block(1, wait_for_mempool=1)
 
@@ -4402,7 +4408,7 @@ def test_closing_no_anysegwit_retry(node_factory, bitcoind):
                                                'dev-force-features': -27}])
 
     with pytest.raises(RpcError, match=r'Peer does not allow v1\+ shutdown addresses'):
-        l1.rpc.close(l2.info['id'], destination='bcrt1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k0ylj56')
+        l1.rpc.close(l2.info['id'], destination='bcrt1zw508d6qejxtdg4y5r3zarvaryv2wuatf')
 
     oldaddr = l1.rpc.newaddr('bech32')['bech32']
     l1.rpc.close(l2.info['id'], destination=oldaddr)

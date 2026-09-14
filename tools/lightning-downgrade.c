@@ -234,6 +234,12 @@ int main(int argc, char *argv[])
 		     "Lightningd PID file exists, aborting: lightningd must not be running");
 	}
 
+	/* Upstream releases cannot interpret unified wallet/channel signatures.
+	 * Refuse before deleting gossip or modifying the database. */
+	if (!is_elements(chainparams))
+		errx(ERROR_USAGE, "Cannot downgrade a Blake2b wallet to upstream " PREV_VERSION
+		     ": unified signatures require a compatible Blake2b release");
+
 	migrations = get_db_migrations(&num_migrations);
 	prev_version = version_db(PREV_VERSION);
 

@@ -43,7 +43,9 @@ elif [ "${BLAKE2B_CI:-0}" = "1" ]; then
     [ "$1" = "" ] || cp "${KNOTS_FILE}" "$1"/
     sudo install -D -m 755 "bitcoin-${KNOTS_VERSION}/bin/bitcoind" /usr/local/libexec/paperclip-bitcoind
     sudo install -m 755 "bitcoin-${KNOTS_VERSION}/bin/bitcoin-cli" /usr/local/bin/bitcoin-cli
-    printf '%s\n' '#!/bin/sh' 'exec /usr/local/libexec/paperclip-bitcoind -testactivationheight=blake2b@1 "$@"' > paperclip-bitcoind-wrapper
+    # CLN's randomized anti-fee-sniping locktime can legitimately equal 21.
+    # Disable that overlay heuristic in tests, retaining consensus validation.
+    printf '%s\n' '#!/bin/sh' 'exec /usr/local/libexec/paperclip-bitcoind -testactivationheight=blake2b@1 -rejectparasites=0 "$@"' > paperclip-bitcoind-wrapper
     sudo install -m 755 paperclip-bitcoind-wrapper /usr/local/bin/bitcoind
 else
     if [ -f "$1/${FILENAME}" ]; then

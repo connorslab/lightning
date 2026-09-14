@@ -1,6 +1,8 @@
 #include "config.h"
+#include <bitcoin/chainparams.h>
 #include <bitcoin/script.h>
 #include <common/shutdown_scriptpubkey.h>
+#include <common/utils.h>
 #include <wally_script.h>
 #include <wire/wire.h>
 
@@ -78,6 +80,10 @@ bool valid_shutdown_scriptpubkey(const u8 *scriptpubkey,
 				 bool option_simple_close)
 {
 	const size_t script_len = tal_bytelen(scriptpubkey);
+	/* Blake2b consensus limits non-OP_RETURN output scripts to 34 bytes. */
+	if (chainparams && !is_elements(chainparams) && script_len > 34
+	    && scriptpubkey[0] != OP_RETURN)
+		return false;
 	if (allow_oldstyle) {
 		if (is_p2pkh(scriptpubkey, script_len, NULL)
 		    || is_p2sh(scriptpubkey, script_len, NULL))

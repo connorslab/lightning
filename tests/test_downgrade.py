@@ -1,6 +1,6 @@
 from fixtures import *  # noqa: F401,F403
 from utils import (
-    TIMEOUT,  # noqa: F401
+    TIMEOUT, TEST_NETWORK,  # noqa: F401
     first_scid, only_one,
 )
 
@@ -53,6 +53,14 @@ def test_downgrade(node_factory, executor):
     assert retcode == ERROR_USAGE
 
     l1.stop()
+    if TEST_NETWORK != 'liquid-regtest':
+        result = subprocess.run(cmd_line, capture_output=True, timeout=TIMEOUT)
+        assert result.returncode == ERROR_USAGE
+        assert b'Cannot downgrade a Blake2b wallet' in result.stderr
+        l1.start()
+        l1.connect(l2)
+        l1.pay(l2, 1000)
+        return
     subprocess.check_call(cmd_line)
 
     # Test with old lightningd if it's available.
@@ -110,4 +118,11 @@ def test_downgrade_bias(node_factory, executor):
     p = subprocess.Popen(cmd_line, stdout=subprocess.DEVNULL,
                          stderr=subprocess.PIPE)
     _, err = p.communicate(timeout=TIMEOUT)
+    if TEST_NETWORK != 'liquid-regtest':
+        assert p.returncode == ERROR_USAGE
+        assert b'Cannot downgrade a Blake2b wallet' in err
+        l1.start()
+        l1.connect(l2)
+        l1.pay(l2, 1000)
+        return
     assert p.returncode == 0

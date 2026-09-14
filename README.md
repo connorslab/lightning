@@ -2,6 +2,8 @@
 
 Based on [privkeyio's Core Lightning v26.06.7-blake2b.3](https://github.com/privkeyio/lightning/releases/tag/v26.06.7-blake2b.3), with two focused additions:
 
+**Compare the changes:** [original privkeyio v26.06.7-blake2b.3 → Paperclip main](https://github.com/connorslab/lightning/compare/v26.06.7-blake2b.3...main). The base tag is preserved from privkeyio; this comparison includes all code, tests, and documentation added on `main`. For the published binary's exact source changes, use the [test-release comparison](https://github.com/connorslab/lightning/compare/v26.06.7-blake2b.3...v26.06.7-blake2b.3-paperclip.1-test).
+
 - **Required Blake2b feature bit 68.** Both peers must advertise it. Peers missing bit 68, including those advertising only optional bit 69, are rejected during the init handshake.
 - **SIGHASH_UNIFIED signing for wallets and new channels.** Uses Knots' `UnifiedSighash` tagged digest and `0x20` flag for replay protection against legacy Bitcoin signature rules. New channels negotiate `option_unified_sigs` using capability bit 71 in init and channel-type bit 70, which persists across restarts.
 

@@ -650,6 +650,8 @@ def test_channel_htlcs_id_change(bitcoind, node_factory):
     for block in blocks:
         assert bitcoind.rpc.submitblock(block) is None
     assert bitcoind.rpc.getblockcount() == len(blocks)
+    # Fresh timestamps leave IBD; mature this backend's new wallet funds.
+    bitcoind.generate_block(101)
     l1 = node_factory.get_node(dbfile='channel_htlcs-pre-pagination.sqlite3.xz',
                                old_hsmsecret=True,
                                options={'database-upgrade': True})
@@ -658,8 +660,6 @@ def test_channel_htlcs_id_change(bitcoind, node_factory):
     # l3 is a fresh node.
     l2, l3 = node_factory.get_nodes(2)
 
-    # 100 blocks so this bitcoind has funds!
-    bitcoind.generate_block(101)
     node_factory.join_nodes([l1, l3])
 
     # Make some HTLCS

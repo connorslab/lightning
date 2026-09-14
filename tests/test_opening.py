@@ -1971,7 +1971,7 @@ def test_zeroconf_refusal(bitcoind, node_factory, chainparams):
     ctype = [12, 50]
     # No anchors for elements
     if not chainparams['elements']:
-        ctype += [22]
+        ctype += [22, 70]
     with pytest.raises(RpcError, match="You required zeroconf, but you're not on our allowlist"):
         l1.rpc.fundchannel(l2.info['id'], 'all', channel_type=ctype)
 

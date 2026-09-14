@@ -1193,6 +1193,13 @@ static u8 *handle_ecdh(struct hsmd_client *c, const u8 *msg_in)
  * commitment states (option_data_loss_protect in the spec) which means we've
  * been restored from backup or something, and may have already revealed
  * secrets.  We carefully check that this is true, here. */
+void hsmd_cleanup(void)
+{
+	/* The mlock destructor erases the seed before releasing its storage. */
+	tal_free(secretstuff.bip32_seed);
+	sodium_memzero(&secretstuff, sizeof(secretstuff));
+}
+
 static u8 *handle_check_future_secret(struct hsmd_client *c, const u8 *msg_in)
 {
 	struct secret channel_seed;

@@ -646,7 +646,7 @@ class BitcoinD(TailableProc):
     def restore_blocks(self, blocks):
         """Restore blocks from an array"""
         for b in blocks:
-            self.rpc.submitblock(b)
+            assert self.rpc.submitblock(b) is None
 
 
 class ElementsD(BitcoinD):

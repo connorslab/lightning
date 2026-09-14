@@ -86,12 +86,16 @@ def _key(h: dict) -> str:
 
 def _ensure_zero_conf_channel(peer_id: str, capacity: int) -> bool:
     plugin.log(f"fundchannel zero-conf to {peer_id} for {capacity} sat...")
+    channel_type = [12, 46, 50]
+    features = int(plugin.rpc.getinfo()['our_features']['init'], 16)
+    if features & (3 << 70):
+        channel_type.append(70)
     res = plugin.rpc.fundchannel(
         peer_id,
         capacity,
         announce=False,
         mindepth=0,
-        channel_type=[12, 46, 50],
+        channel_type=channel_type,
     )
     plugin.log(f"got channel response {res}")
     state.channel_id_hex = res["channel_id"]

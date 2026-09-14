@@ -475,6 +475,8 @@ struct command_result *route_sendpay_request(struct command *cmd,
 				 payment->blockheight);
 		// FIXME: No localinvreqid is provided
 	}
+	/* The JSON request owns its encoded copy; the route need not retain this. */
+	tal_free(onion);
 	route_pending_register(payment->routetracker, route);
 	return send_outreq(req);
 }

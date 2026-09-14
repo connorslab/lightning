@@ -1339,7 +1339,7 @@ done:
 
 static struct bitcoin_signature *
 wallet_htlc_sigs_load(const tal_t *ctx, struct wallet *w, u64 channelid,
-		      bool option_anchors)
+		      const struct channel_type *type)
 {
 	struct db_stmt *stmt;
 	struct bitcoin_signature *htlc_sigs = tal_arr(ctx, struct bitcoin_signature, 0);
@@ -1360,10 +1360,11 @@ wallet_htlc_sigs_load(const tal_t *ctx, struct wallet *w, u64 channelid,
 		 *   transaction, `SIGHASH_SINGLE|SIGHASH_ANYONECANPAY` is
 		 *   used as described in [BOLT #5]
 		 */
-		if (option_anchors)
+		if (channel_type_has_anchors(type))
 			sig.sighash_type = SIGHASH_SINGLE|SIGHASH_ANYONECANPAY;
 		else
 			sig.sighash_type = SIGHASH_ALL;
+		sig.sighash_type = channel_type_sighash(type, sig.sighash_type);
 		tal_arr_expand(&htlc_sigs, sig);
 	}
 	tal_free(stmt);
@@ -1756,7 +1757,7 @@ wallet_stmt2inflight(struct wallet *w, struct db_stmt *stmt,
 				 tal_hex(tmpctx, db_col_arr(tmpctx, stmt,
 							    "last_sig", u8)));
 
-		last_sig.sighash_type = SIGHASH_ALL;
+		last_sig.sighash_type = channel_type_sighash(chan->type, SIGHASH_ALL);
 		inflight_set_last_tx(inflight, last_tx, last_sig);
 	} else
 		db_col_ignore(stmt, "last_sig");
@@ -2072,7 +2073,7 @@ static struct channel *wallet_stmt2channel(struct wallet *w, struct db_stmt *stm
 							    "last_tx", u8)));
 		last_sig = tal(tmpctx, struct bitcoin_signature);
 		db_col_signature(stmt, "last_sig", &last_sig->s);
-		last_sig->sighash_type = SIGHASH_ALL;
+		last_sig->sighash_type = channel_type_sighash(type, SIGHASH_ALL);
 	} else {
 		db_col_ignore(stmt, "last_sig");
 		last_tx = NULL;
@@ -2158,7 +2159,7 @@ static struct channel *wallet_stmt2channel(struct wallet *w, struct db_stmt *stm
 			   last_sig,
 			   wallet_htlc_sigs_load(tmpctx, w,
 						 db_col_u64(stmt, "id"),
-						 channel_type_has_anchors(type)),
+						 type),
 			   &channel_info,
 			   take(fee_states),
 			   remote_shutdown_scriptpubkey,

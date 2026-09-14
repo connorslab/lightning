@@ -65,6 +65,7 @@ impl LightningProvider for ClnApiRpc {
         amount: &Msat,
     ) -> AnyResult<(Sha256, String)> {
         let mut rpc = self.create_rpc().await?;
+        let channel_type = crate::cln_adapters::rpc::jit_channel_type(&mut rpc).await?;
         let res = rpc
             .call_typed(&FundchannelRequest {
                 announce: Some(false),
@@ -76,7 +77,7 @@ impl LightningProvider for ClnApiRpc {
                 push_msat: None,
                 request_amt: None,
                 reserve: None,
-                channel_type: Some(vec![12, 46, 50]),
+                channel_type: Some(channel_type),
                 utxos: None,
                 amount: AmountOrAll::Amount(Amount::from_msat(amount.msat())),
                 id: peer_id.to_owned(),

@@ -168,7 +168,10 @@ static void run_with_features(const uint8_t *data, size_t size, bool blake2b)
 
 void run(const uint8_t *data, size_t size)
 {
+	/* The unit-test driver may own data under tmpctx, which each pass clears. */
+	u8 *input = tal_dup_arr(NULL, u8, data, size, 0);
 	/* Preserve the original parser coverage and exercise required-bit rejection. */
-	run_with_features(data, size, false);
-	run_with_features(data, size, true);
+	run_with_features(input, size, false);
+	run_with_features(input, size, true);
+	tal_free(input);
 }

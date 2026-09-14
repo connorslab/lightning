@@ -763,12 +763,12 @@ static struct onchain_signing_info *new_signing_info(const tal_t *ctx,
 }
 
 /* The durable channel type selects signing after restart as well. */
-static const struct bitcoin_tx *onchain_signing_tx(const tal_t *ctx,
-                        const struct bitcoin_tx *tx,
+static const struct bitcoin_tx *onchain_signing_tx(const struct bitcoin_tx *tx,
                         const struct onchain_signing_info *info)
 {
 	if (channel_type_has(info->channel->type, OPT_UNIFIED_SIGS)) {
-		struct bitcoin_tx *copy = clone_bitcoin_tx(ctx, tx);
+		/* Only needed until the caller serializes its HSM request. */
+		struct bitcoin_tx *copy = clone_bitcoin_tx(tmpctx, tx);
 		enum sighash_type base = SIGHASH_ALL;
 		if (channel_type_has_anchors(info->channel->type)
 		    && (info->msgtype == WIRE_ONCHAIND_SPEND_HTLC_SUCCESS
@@ -786,7 +786,7 @@ static u8 *sign_tx_to_us(const tal_t *ctx,
 			 const struct bitcoin_tx *tx,
 			 const struct onchain_signing_info *info)
 {
-	tx = onchain_signing_tx(ctx, tx, info);
+	tx = onchain_signing_tx(tx, info);
 	assert(info->msgtype == WIRE_ONCHAIND_SPEND_TO_US);
 	return towire_hsmd_sign_any_delayed_payment_to_us(ctx,
 							  info->u.htlc_timedout.commit_num,
@@ -800,7 +800,7 @@ static u8 *sign_penalty(const tal_t *ctx,
 			const struct bitcoin_tx *tx,
 			const struct onchain_signing_info *info)
 {
-	tx = onchain_signing_tx(ctx, tx, info);
+	tx = onchain_signing_tx(tx, info);
 	assert(info->msgtype == WIRE_ONCHAIND_SPEND_PENALTY);
 	return towire_hsmd_sign_any_penalty_to_us(ctx,
 						  &info->u.spend_penalty.remote_per_commitment_secret,
@@ -814,7 +814,7 @@ static u8 *sign_htlc_success(const tal_t *ctx,
 			     const struct bitcoin_tx *tx,
 			     const struct onchain_signing_info *info)
 {
-	tx = onchain_signing_tx(ctx, tx, info);
+	tx = onchain_signing_tx(tx, info);
 	const bool anchor_outputs = channel_type_has_anchors(info->channel->type);
 
 	assert(info->msgtype == WIRE_ONCHAIND_SPEND_HTLC_SUCCESS);
@@ -831,7 +831,7 @@ static u8 *sign_htlc_timeout(const tal_t *ctx,
 			     const struct bitcoin_tx *tx,
 			     const struct onchain_signing_info *info)
 {
-	tx = onchain_signing_tx(ctx, tx, info);
+	tx = onchain_signing_tx(tx, info);
 	const bool anchor_outputs = channel_type_has_anchors(info->channel->type);
 
 	assert(info->msgtype == WIRE_ONCHAIND_SPEND_HTLC_TIMEOUT);
@@ -848,7 +848,7 @@ static u8 *sign_fulfill(const tal_t *ctx,
 			const struct bitcoin_tx *tx,
 			const struct onchain_signing_info *info)
 {
-	tx = onchain_signing_tx(ctx, tx, info);
+	tx = onchain_signing_tx(tx, info);
 	const bool anchor_outputs = channel_type_has_anchors(info->channel->type);
 
 	assert(info->msgtype == WIRE_ONCHAIND_SPEND_FULFILL);
@@ -865,7 +865,7 @@ static u8 *sign_htlc_expired(const tal_t *ctx,
 			     const struct bitcoin_tx *tx,
 			     const struct onchain_signing_info *info)
 {
-	tx = onchain_signing_tx(ctx, tx, info);
+	tx = onchain_signing_tx(tx, info);
 	const bool anchor_outputs = channel_type_has_anchors(info->channel->type);
 
 	assert(info->msgtype == WIRE_ONCHAIND_SPEND_HTLC_EXPIRED);

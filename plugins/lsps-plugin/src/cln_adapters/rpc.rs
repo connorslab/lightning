@@ -32,6 +32,19 @@ use std::path::PathBuf;
 pub const DS_MAIN_KEY: &'static str = "lsps";
 pub const DS_SUB_KEY: &'static str = "lsps2";
 
+pub async fn jit_channel_type(rpc: &mut ClnRpc) -> Result<Vec<u32>> {
+    let info = rpc.call_typed(&GetinfoRequest {}).await?;
+    let mut channel_type = vec![12, 46, 50];
+    if let Some(features) = info.our_features {
+        let init = hex::decode(features.init)?;
+        // Provisional option_unified_sigs pair 70/71, in the ninth byte from the end.
+        if init.len() >= 9 && init[init.len() - 9] & 0xc0 != 0 {
+            channel_type.push(70);
+        }
+    }
+    Ok(channel_type)
+}
+
 #[derive(Clone)]
 pub struct ClnApiRpc {
     rpc_path: PathBuf,
@@ -55,6 +68,7 @@ impl LightningProvider for ClnApiRpc {
         amount: &Msat,
     ) -> Result<(Sha256, String)> {
         let mut rpc = self.create_rpc().await?;
+        let channel_type = jit_channel_type(&mut rpc).await?;
         let res = rpc
             .call_typed(&FundchannelRequest {
                 announce: Some(false),
@@ -66,7 +80,7 @@ impl LightningProvider for ClnApiRpc {
                 push_msat: None,
                 request_amt: None,
                 reserve: None,
-                channel_type: Some(vec![12, 46, 50]),
+                channel_type: Some(channel_type),
                 utxos: None,
                 amount: AmountOrAll::Amount(Amount::from_msat(amount.msat())),
                 id: peer_id.to_owned(),

@@ -52,6 +52,10 @@ def test_unified_unilateral_close(node_factory, bitcoind):
     a, b = node_factory.line_graph(2, opts={'may_reconnect': True, 'allow_warning': True})
     funding = only_one(a.rpc.listpeerchannels()['channels'])['funding_txid']
     a.pay(b, 1000000)
+    # Close using signatures loaded from disk, without replacing them by paying.
+    a.restart()
+    wait_for(lambda: only_one(a.rpc.listpeerchannels()['channels'])['peer_connected'])
+    assert 'unified_sigs/even' in only_one(a.rpc.listpeerchannels()['channels'])['channel_type']['names']
     b.stop()
     a.rpc.close(b.info['id'], unilateraltimeout=1)
     a.wait_for_channel_onchain(b.info['id'])

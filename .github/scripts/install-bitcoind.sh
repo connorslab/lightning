@@ -45,7 +45,10 @@ elif [ "${BLAKE2B_CI:-0}" = "1" ]; then
     sudo install -m 755 "bitcoin-${KNOTS_VERSION}/bin/bitcoin-cli" /usr/local/bin/bitcoin-cli
     # CLN's randomized anti-fee-sniping locktime can legitimately equal 21.
     # Disable that overlay heuristic in tests, retaining consensus validation.
-    printf '%s\n' '#!/bin/sh' 'exec /usr/local/libexec/paperclip-bitcoind -testactivationheight=blake2b@${BLAKE2B_ACTIVATION_HEIGHT:-1} -rejectparasites=0 "$@"' > paperclip-bitcoind-wrapper
+    cat > paperclip-bitcoind-wrapper <<'WRAPPER'
+#!/bin/sh
+exec /usr/local/libexec/paperclip-bitcoind -testactivationheight=blake2b@${BLAKE2B_ACTIVATION_HEIGHT:-1} -rejectparasites=0 "$@"
+WRAPPER
     sudo install -m 755 paperclip-bitcoind-wrapper /usr/local/bin/bitcoind
 else
     if [ -f "$1/${FILENAME}" ]; then

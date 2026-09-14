@@ -1,9 +1,9 @@
 #include "config.h"
-#include <bitcoin/unified_sighash.h>
 #include <bitcoin/psbt.h>
-#include <wally_psbt.h>
+#include <bitcoin/unified_sighash.h>
 #include <ccan/crypto/sha256/sha256.h>
 #include <string.h>
+#include <wally_psbt.h>
 
 static void unified_script(struct sha256_ctx *ctx, const u8 *script, size_t len)
 {
@@ -77,7 +77,7 @@ bool bitcoin_unified_sighash(const struct wally_tx *tx, size_t input,
 		unified_append_hash(&msg, &part);
 		sha256_init(&part);
 		for (size_t i = 0; i < num_spent; i++)
-			sha256_le64(&part, spent[i].amount.satoshis);
+			sha256_le64(&part, spent[i].amount.satoshis); /* Raw: digest serialization. */
 		unified_append_hash(&msg, &part);
 		sha256_init(&part);
 		for (size_t i = 0; i < num_spent; i++)
@@ -98,7 +98,7 @@ bool bitcoin_unified_sighash(const struct wally_tx *tx, size_t input,
 	sha256_u8(&msg, exec->script_type);
 	if (acp) {
 		unified_prevout(&msg, &tx->inputs[input]);
-		unified_output(&msg, spent[input].amount.satoshis,
+		unified_output(&msg, spent[input].amount.satoshis, /* Raw: digest serialization. */
 			       spent[input].script, tal_bytelen(spent[input].script));
 		sha256_le32(&msg, tx->inputs[input].sequence);
 	} else

@@ -569,7 +569,7 @@ static bool sign_unified_wallet_input(struct wally_psbt *psbt, size_t i,
 		return false;
 	/* Authenticate the owned prevout against the wallet's UTXO record. */
 	if (!psbt->inputs[i].witness_utxo
-	    || psbt->inputs[i].witness_utxo->satoshi != utxo->amount.satoshis
+	    || psbt->inputs[i].witness_utxo->satoshi != utxo->amount.satoshis /* Raw: compare authenticated PSBT amount. */
 	    || psbt->inputs[i].witness_utxo->script_len != tal_bytelen(spk)
 	    || memcmp(psbt->inputs[i].witness_utxo->script, spk, tal_bytelen(spk)))
 		return false;

@@ -6,11 +6,11 @@
 #include <bitcoin/signature.h>
 #include <bitcoin/tx.h>
 #include <bitcoin/unified_sighash.h>
-#include <ccan/mem/mem.h>
 #include <ccan/err/err.h>
-#include <wally_psbt.h>
+#include <ccan/mem/mem.h>
 #include <common/utils.h>
 #include <secp256k1_schnorrsig.h>
+#include <wally_psbt.h>
 #include <wire/wire.h>
 
 #undef DEBUG

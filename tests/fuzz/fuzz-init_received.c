@@ -130,7 +130,7 @@ void init(int *argc, char ***argv)
 	dev_towire_allow_invalid_node_id = true;
 }
 
-void run(const uint8_t *data, size_t size)
+static void run_with_features(const uint8_t *data, size_t size, bool blake2b)
 {
 	struct io_conn *conn;
 	struct crypto_state cs;
@@ -153,6 +153,10 @@ void run(const uint8_t *data, size_t size)
 	peer->msg = encoded_msg;
 	peer->incoming = true;
 	peer->daemon = talz(tmpctx, struct daemon);
+	peer->daemon->our_features = feature_set_for_feature(peer->daemon,
+						    OPT_BLAKE2B);
+	if (!blake2b)
+		tal_resize(&peer->daemon->our_features->bits[INIT_FEATURE], 0);
 	peer->timeout = NULL;
 	peer->id = id;
 
@@ -160,4 +164,11 @@ void run(const uint8_t *data, size_t size)
 	peer_init_received(conn, peer);
 
 	clean_tmpctx();
+}
+
+void run(const uint8_t *data, size_t size)
+{
+	/* Preserve the original parser coverage and exercise required-bit rejection. */
+	run_with_features(data, size, false);
+	run_with_features(data, size, true);
 }

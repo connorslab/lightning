@@ -3,6 +3,7 @@ from fixtures import TEST_NETWORK
 from hashlib import sha256
 from pathlib import Path
 from pyln.client import RpcError, Millisatoshi
+from pyln.proto.bech32 import bech32_decode, bech32_encode
 from pyln.proto.onion import TlvPayload
 from pyln.testing.utils import EXPERIMENTAL_DUAL_FUND, FUNDAMOUNT, scid_to_int
 from utils import (
@@ -5338,8 +5339,14 @@ def test_pay_bolt11_metadata(node_factory, bitcoind):
     assert b11['payment_metadata'] == '01fafaf0'
 
     # I previously hacked lightningd to add "this is metadata" to metadata.
-    # After CI started failing, I *also* hacked it to set expiry to BIGNUM.
+    # Refresh its timestamp and signature so this fixture cannot expire.
     inv = "lnbcrt1230n1p3yzgcxsp5q8g040f9rl9mu2unkjuj0vn262s6nyrhz5hythk3ueu2lfzahmzspp5ve584t0cv27hwmy0cx9ca8uwyqyfw9y9dm3r8vus9fv36r2l9yjsdq8v3jhxccmq6w35xjueqd9ejqmt9w3skgct5vyxqxra2q2qcqp99q2sqqqqqysgqfw6efxpzk5x5vfj8se46yg667x5cvhyttnmuqyk0q7rmhx3gs249qhtdggnek8c5adm2pztkjddlwyn2art2zg9xap2ckczzl3fzz4qqsej6mf"
+    hrp, data = bech32_decode(inv)
+    timestamp = int(time.time())
+    data = bytes((timestamp >> shift) & 31 for shift in range(30, -1, -5)) + data[7:]
+    inv = l2.rpc.signinvoice(bech32_encode(hrp, data))['bolt11']
+    assert l1.rpc.decode(inv)['payment_metadata'] == b'this is metadata'.hex()
+
     # Make l2 "know" about this invoice.
     l2.rpc.invoice(amount_msat=123000, label='label1', description='desc', preimage='00' * 32)
 

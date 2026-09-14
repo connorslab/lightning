@@ -1,4 +1,16 @@
-# Core Lightning (CLN): A specification compliant Lightning Network implementation in C
+# Paperclip Blake2b Lightning — unofficial test build
+
+Based on [privkeyio's v26.06.7-blake2b.3](https://github.com/privkeyio/lightning/releases/tag/v26.06.7-blake2b.3), with credit to privkeyio and the Core Lightning contributors.
+
+- Requires Blake2b feature bit **68** when connecting. Peers without it, including older Blake2b nodes, are rejected.
+- Adds **SIGHASH_UNIFIED** signing to wallet and channel transactions. New Blake2b channels require unified-signature channel type **70**, advertised through init capability **71**.
+- Keeps invoice encoding and genesis unchanged. Existing channel signatures are not retroactively protected, and no automatic channel migration is included.
+
+Feature assignments are provisional. Required bit 68 deliberately differs from cguida's optional migration signaling. The dedicated handshake and signing tests pass; the full inherited CI suite is still under validation.
+
+[Download test 2](https://github.com/connorslab/lightning/releases/tag/v26.06.7-blake2b.3-paperclip.2-test) · [Compare its source with privkeyio](https://github.com/connorslab/lightning/compare/a030d213c613ecdfa3d83086d3354bfbc458c5a8...909147d8320698639ef0092d0670e9f02506e340) · [Build details](doc/PAPERCLIP-BUILD.md)
+
+## Core Lightning upstream documentation
 
 Core Lightning (previously c-lightning) is a lightweight, highly customizable and [standard compliant][std] implementation of the Lightning Network protocol.
 

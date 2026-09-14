@@ -4393,6 +4393,9 @@ def test_graceful_htlc(node_factory, executor):
     l1.rpc.sendpay(route, inv['payment_hash'], payment_secret=inv['payment_secret'])
     wait_for(lambda: len(only_one(l3.rpc.listpeerchannels()['channels'])['htlcs']) == 1)
 
+    # Receiving the HTLC at l3 does not mean l2 has processed its final revocation.
+    wait_for(lambda: only_one(only_one(l2.rpc.listpeerchannels(l3.info['id'])['channels'])['htlcs'])['state'] == 'SENT_ADD_ACK_REVOCATION')
+
     notifications = []
 
     def run_graceful():

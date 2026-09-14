@@ -2,12 +2,15 @@
 
 Base: privkeyio v26.06.7-blake2b.3, Ubuntu 24.04 amd64.
 
-Scope: a low-number Blake2b peer feature and unified transaction signing.
-This branch is under development; transaction/channel integration is not yet
-complete. Do not deploy it on funded nodes or claim complete replay protection.
+Scope: required Blake2b peer feature bit 68 and unified transaction signing.
+The dedicated build tests pass for peer separation, unified signatures, wallet
+transactions, channel funding, payments, restart, closure and splicing. The full
+inherited CI suite is still being validated. This is an unofficial test build.
 
 The peer feature uses provisional 68/69 (advertised required bit 68). Invoices
-and genesis are unchanged. See PROPOSAL.md and UNIFIED-PROPOSAL.md for status.
+and genesis are unchanged. New Blake2b channels use required channel-type bit 70
+for unified signatures, with init capability 71. These assignments are provisional,
+not registered BOLT assignments. See [signing scope](BLAKE2B-UNIFIED-PROPOSAL.md).
 
 Upstream .3 uses database schema 284; .2 used 282. Any database upgrade requires
 separate planning and complete backups. No deployment is performed by this build.

@@ -570,7 +570,7 @@ def test_fundpsbt_feerates(node_factory, bitcoind, chainparams, addrtype):
     if addrtype == 'bech32':
         witness_weight = 1 + 71 + 1 + 33
     elif addrtype == 'p2tr':
-        witness_weight = 1 + 64
+        witness_weight = 1 + 64 + (not chainparams['elements'])
     else:
         assert False
 

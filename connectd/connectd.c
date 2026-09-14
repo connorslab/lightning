@@ -1813,7 +1813,7 @@ static void connect_activate(struct daemon *daemon, const u8 *msg)
 			}
 			/* Add to listeners array */
 			tal_arr_expand(&daemon->listeners,
-				       io_new_listener(daemon->listeners,
+				       io_new_listener(daemon,
 						       daemon->listen_fds[i]->fd,
 						       get_in_cb(daemon->listen_fds[i]
 								 ->is_websocket),
@@ -2015,6 +2015,8 @@ static void start_shutdown(struct daemon *daemon, const u8 *msg)
 	daemon->shutting_down = true;
 
 	/* No more incoming connections! */
+	for (size_t i = 0; i < tal_count(daemon->listeners); i++)
+		io_close_listener(daemon->listeners[i]);
 	daemon->listeners = tal_free(daemon->listeners);
 
 	daemon_conn_send(daemon->master,

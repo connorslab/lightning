@@ -2,8 +2,8 @@
 #ifndef LIGHTNING_COMMON_CHANNEL_TYPE_H
 #define LIGHTNING_COMMON_CHANNEL_TYPE_H
 #include "config.h"
-#include <common/features.h>
 #include <bitcoin/signature.h>
+#include <common/features.h>
 #include <wire/channel_type_wiregen.h>
 
 /* Explicit channel types */

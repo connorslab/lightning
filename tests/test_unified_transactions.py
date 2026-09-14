@@ -1,7 +1,9 @@
 """Run only against isolated Knots regtest with Blake2b active from height 1."""
 from fixtures import *  # noqa: F401,F403
-from utils import only_one, wait_for, sync_blockheight
+from utils import only_one, wait_for, sync_blockheight, TEST_NETWORK
 import pytest
+
+pytestmark = pytest.mark.skipif(TEST_NETWORK != 'regtest', reason='Blake2b consensus tests require Knots regtest')
 
 
 def assert_unified_witnesses(bitcoind, txid, minimum):

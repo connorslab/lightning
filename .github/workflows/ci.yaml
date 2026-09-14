@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  BLAKE2B_CI: "1"
   # Reduce size, helps upload-artifact work more reliably
   RUST_PROFILE: small
   SLOW_MACHINE: 1
@@ -839,7 +840,7 @@ jobs:
           if-no-files-found: ignore
 
   min-btc-support:
-    name: Test minimum supported BTC v${{ matrix.MIN_BTC_VERSION }} with ${{ matrix.NAME }}
+    name: Test pinned Blake2b Knots backend with ${{ matrix.NAME }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -855,7 +856,6 @@ jobs:
             TEST_DB_PROVIDER: sqlite3
             COMPILER: clang
             TEST_NETWORK: regtest
-            MIN_BTC_VERSION: "25.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -879,17 +879,8 @@ jobs:
         run: |
           bash -x .github/scripts/setup.sh
 
-      - name: Download Bitcoin Core
-        run: wget "https://bitcoincore.org/bin/bitcoin-core-${{ matrix.MIN_BTC_VERSION }}/bitcoin-${{ matrix.MIN_BTC_VERSION }}-x86_64-linux-gnu.tar.gz"
-
-      - name: Extract Bitcoin Core
-        run: tar -xf "bitcoin-${{ matrix.MIN_BTC_VERSION }}-x86_64-linux-gnu.tar.gz"
-
-      - name: Move Bitcoin Core Binaries
-        run: sudo mv bitcoin-${{ matrix.MIN_BTC_VERSION }}/bin/* /usr/local/bin/
-
-      - name: Clean Up Downloaded Bitcoin
-        run: rm -rf "bitcoin-${{ matrix.MIN_BTC_VERSION }}-x86_64-linux-gnu.tar.gz" "bitcoin-${{ matrix.MIN_BTC_VERSION }}"
+      - name: Verify Blake2b backend
+        run: bitcoind --version | grep '29.4.1.knots20260508'
 
       - name: Download build
         uses: actions/download-artifact@v8

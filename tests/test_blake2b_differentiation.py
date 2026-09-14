@@ -1,7 +1,10 @@
 """Mandatory peer feature without invoice modifications."""
 from fixtures import *  # noqa: F401,F403
 from pyln.client import RpcError
+from utils import TEST_NETWORK
 import pytest
+
+pytestmark = pytest.mark.skipif(TEST_NETWORK != 'regtest', reason='Blake2b peer features do not apply to Elements')
 
 
 @pytest.mark.parametrize('incoming', [False, True])

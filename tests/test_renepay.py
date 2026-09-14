@@ -777,7 +777,11 @@ def test_privatechan(node_factory, bitcoind):
 @unittest.skipIf(TEST_NETWORK == 'liquid-regtest', "broken for some reason")
 def test_hardmpp2(node_factory, bitcoind):
     """Credits to @daywalker90 for this test case."""
-    opts = {"disable-mpp": None, "fee-base": 0, "fee-per-satoshi": 10, 'allow-deprecated-apis': True}
+    # Exercise renepay's split across the requested channels. Opportunistic
+    # forwarding can redirect concurrent parts to one channel before its
+    # pending balance is updated, testing a different forwarding heuristic.
+    opts = {"disable-mpp": None, "fee-base": 0, "fee-per-satoshi": 10,
+            'allow-deprecated-apis': True, 'dev-strict-forwarding': None}
     l1, l2, l3 = node_factory.get_nodes(3, opts=opts)
     start_channels(
         [

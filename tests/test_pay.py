@@ -5292,6 +5292,8 @@ def test_sendpay_grouping(node_factory, bitcoind):
     l1.rpc.pay(inv, amount_msat='10000msat')
 
     # And finally we should have all 3 attempts to pay the invoice
+    # Failure notifications can precede the failed HTLCs' final settlement.
+    wait_for(lambda: [p['status'] for p in l1.rpc.listpays()['pays']] == ['failed', 'failed', 'complete'])
     pays = l1.rpc.listpays()['pays']
     assert(len(pays) == 3)
     assert([p['status'] for p in pays] == ['failed', 'failed', 'complete'])

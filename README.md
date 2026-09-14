@@ -1,6 +1,25 @@
-# Core Lightning (CLN): A specification compliant Lightning Network implementation in C
+# Paperclip Lightning — unofficial Blake2b test implementation
 
-Core Lightning (previously c-lightning) is a lightweight, highly customizable and [standard compliant][std] implementation of the Lightning Network protocol.
+Based on [privkeyio's Core Lightning v26.06.7-blake2b.3](https://github.com/privkeyio/lightning/releases/tag/v26.06.7-blake2b.3), with two focused additions:
+
+- **Required Blake2b feature bit 68.** Both peers must advertise it. Peers missing bit 68, including those advertising only optional bit 69, are rejected during the init handshake.
+- **SIGHASH_UNIFIED signing for wallets and new channels.** Uses Knots' `UnifiedSighash` tagged digest and `0x20` flag for replay protection against legacy Bitcoin signature rules. New channels negotiate `option_unified_sigs` using capability bit 71 in init and channel-type bit 70, which persists across restarts.
+
+Invoice formats, invoice validation, and genesis identification are unchanged from privkeyio. Feature bits 68 and 70/71 are provisional assignments that need coordination with other implementations.
+
+**Use disposable test funds only.** Existing channels are not automatically migrated, and historical signatures cannot be retroactively protected. HTLC recovery and penalty paths still need broader end-to-end testing. This is not a production-ready release.
+
+[Download the unofficial test build](https://github.com/connorslab/lightning/releases/tag/v26.06.7-blake2b.3-paperclip.1-test) for Ubuntu 24.04 amd64. Verify its archive against the release's `SHA256SUMS`.
+
+[CI run 34790932048](https://github.com/connorslab/lightning/actions/runs/34790932048) passed the full build, 166 Knots digest vectors, a unified ECDSA signature rejection check against legacy BIP143, five peer/invoice tests, and six Knots transaction tests covering funding, payments, restart, cooperative/unilateral closes, withdrawal, and splicing across both channel-opening protocols. The release is built from `167e2196fbe3d29603b683681a02b2520b4e228a`; subsequent README/documentation updates do not change that binary.
+
+The unified-signing approach follows [cguida's proposal](https://gist.github.com/chrisguida/819e2725927e49934a583184b222bc71) and [migration outline](https://gist.github.com/chrisguida/dc72010aba79117c9ff55778938e1a3c). Mandatory peer signaling differs from the optional migration approach; invoice markers and automatic channel migration are outside this patch. This is not a claim of full compliance with the broader proposal.
+
+Credit goes to the Core Lightning contributors for CLN, privkeyio for the Blake2b base, cguida for the differentiation/migration proposals, and Bitcoin Knots contributors for SIGHASH_UNIFIED. See [the change summary](doc/BLAKE2B-DIFFERENTIATION.md), [signing scope](doc/BLAKE2B-UNIFIED-PROPOSAL.md), and [build notes](doc/PAPERCLIP-BUILD.md).
+
+## Upstream Core Lightning documentation
+
+The material below is inherited from Core Lightning. General RPC and development guidance remains useful, but ordinary Bitcoin binaries and upstream release/Docker images do not provide this build's Blake2b additions. Use a compatible Blake2b Knots backend with SIGHASH_UNIFIED active; integration tests use Knots `v29.4.1.knots20260508` with Blake2b active on isolated regtest.
 
 * [Getting Started](#getting-started)
     * [Installation](#installation)
@@ -26,8 +45,7 @@ Core Lightning (previously c-lightning) is a lightweight, highly customizable an
 [![Discord][discord-badge]][discord]
 [![Irc][IRC-badge]][IRC]
 
-This implementation has been in production use on the Bitcoin mainnet since early 2018, with the launch of the [Blockstream Store][blockstream-store-blog].
-We recommend getting started by experimenting on `testnet` (`testnet4` or `regtest`), but the implementation is considered stable and can be safely used on mainnet.
+Upstream Core Lightning has been in production use since early 2018. That history does not establish production readiness for Paperclip's experimental changes; the test-use limitations above apply to this repository.
 
 ## Reach Out to Us
 
@@ -225,5 +243,5 @@ Developers wishing to contribute should start with the developer guide [here](do
 [dockerhub]: https://hub.docker.com/r/elementsproject/lightningd/
 [jsonrpcspec]: https://www.jsonrpc.org/specification
 [helpme-github]: https://github.com/lightningd/plugins/tree/master/helpme
-[actions-badge]: https://github.com/ElementsProject/lightning/workflows/Continuous%20Integration/badge.svg
-[actions]: https://github.com/ElementsProject/lightning/actions
+[actions-badge]: https://github.com/connorslab/lightning/actions/workflows/paperclip-build.yml/badge.svg?branch=main
+[actions]: https://github.com/connorslab/lightning/actions/workflows/paperclip-build.yml

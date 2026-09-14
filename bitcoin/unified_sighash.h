@@ -25,4 +25,4 @@ bool bitcoin_tx_unified_sighash(const struct bitcoin_tx *tx, size_t input,
 			       u8 hash_type,
 			       const struct unified_sighash_input *exec,
 			       struct sha256 *digest);
-#endif
+#endif /* LIGHTNING_BITCOIN_UNIFIED_SIGHASH_H */
